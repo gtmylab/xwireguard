@@ -75,6 +75,7 @@ PYTHON_PATH=$(which python3)
 
 # Update service file with the correct directory and python path
 sed -i "s|{{APP_ROOT}}|$DASHBOARD_DIR|g" "$SERVICE_FILE"
+sed -i "/Environment=\"VIRTUAL_ENV={{VIRTUAL_ENV}}\"/d" "$SERVICE_FILE"
 sed -i "s|{{VIRTUAL_ENV}}|$PYTHON_PATH|g" "$SERVICE_FILE"
 
 # Copy the service file to systemd folder
