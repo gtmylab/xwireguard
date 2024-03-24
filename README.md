@@ -1,4 +1,4 @@
-Wireguard Installer and Admin Panel to manage peers and client
+Wireguard Installer and Admin Panel to manage peers and client. The admin panel is a WGDashboard from donaldzou
 
 Install only in Ubuntu 20.10
 
