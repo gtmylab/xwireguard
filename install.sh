@@ -14,16 +14,16 @@ validate_hostname() {
 
 # Prompt the user to enter hostname until a valid one is provided
 while true; do
-    read -p "Enter Hostname: " hostname
+    read -p "Enter or set a Hostname: " hostname
     if validate_hostname "$hostname"; then
         break
     else
         echo "Invalid hostname. Please enter a valid hostname."
     fi
 done
-read -p "Enter DNS (eg. 147.78.0.8,172.104.39.79): " dns
-read -p "Enter Wireguard Port: " wg_port
-read -p "Enter Dashboard Port: " dashboard_port
+read -p "Specify new DNS (eg. 147.78.0.8,172.104.39.79): " dns
+read -p "Enter Wireguard Port (eg. 51820): " wg_port
+read -p "Enter Dashboard Port (eg. 8080): " dashboard_port
 read -p "Enter Peer Endpoint Allowed IPs (eg. 0.0.0.0/0,::/0): " allowed_ip
 
 # Update hostname
