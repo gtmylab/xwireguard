@@ -10,8 +10,8 @@ sudo apt install wireguard -y
 private_key=$(wg genkey)
 echo "$private_key" | sudo tee /etc/wireguard/private.key
 public_key=$(echo "$private_key" | wg pubkey)
-echo "PrivateKey = $private_key" | sudo tee -a /etc/wireguard/wg0.conf
-echo "PublicKey = $public_key" | sudo tee -a /etc/wireguard/wg0.conf
+#echo "PrivateKey = $private_key" | sudo tee -a /etc/wireguard/wg0.conf
+#echo "PublicKey = $public_key" | sudo tee -a /etc/wireguard/wg0.conf
 
 # Enable IPv4 and IPv6 forwarding
 sudo sed -i '/^#net.ipv4.ip_forward=1/s/^#//' /etc/sysctl.conf
@@ -71,7 +71,7 @@ DASHBOARD_DIR=$(pwd)
 SERVICE_FILE="$DASHBOARD_DIR/wg-dashboard.service"
 
 # Update service file with the correct directory
-sed -i "s|<your dashboard directory full path here>|$DASHBOARD_DIR|g" "$SERVICE_FILE"
+sed -i "s|{{APP_ROOT}}|$DASHBOARD_DIR|g" "$SERVICE_FILE"
 
 # Copy the service file to systemd folder
 sudo cp "$SERVICE_FILE" /etc/systemd/system/wg-dashboard.service
