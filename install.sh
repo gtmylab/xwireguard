@@ -25,6 +25,9 @@ read -p "Specify new DNS (eg. 147.78.0.8,172.104.39.79): " dns
 read -p "Enter Wireguard Port (eg. 51820): " wg_port
 read -p "Enter Dashboard Port (eg. 8080): " dashboard_port
 read -p "Enter Peer Endpoint Allowed IPs (eg. 0.0.0.0/0,::/0): " allowed_ip
+read -p "Choose WireGuard Private IP Address (eg. 10.10.10.1/24, fdf2:de64:f67d:4add::/64): " wg_address
+
+
 
 # Update hostname
 echo "$hostname" | sudo tee /etc/hostname > /dev/null
@@ -66,7 +69,7 @@ sudo ufw --force enable
 # Add Wireguard configuration
 cat <<EOF | sudo tee -a /etc/wireguard/wg0.conf
 [Interface]
-Address = 10.10.10.1/24, fdf2:de64:f67d:4add::/64
+Address = $wg_address
 MTU = 1420
 SaveConfig = true
 PostUp = ufw route allow in on wg0 out on $interface
