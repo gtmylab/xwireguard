@@ -10,8 +10,7 @@ read -p "Enter Peer Endpoint Allowed IPs: " allowed_ip
 # Update hostname
 echo "$hostname" | sudo tee /etc/hostname > /dev/null
 sudo hostnamectl set-hostname "$hostname"
-sudo su
-
+hostname
 # Update package list
 sudo apt update
 
