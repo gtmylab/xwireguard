@@ -11,6 +11,8 @@ read -p "Enter Peer Endpoint Allowed IPs (eg. 0.0.0.0/0,::/0): " allowed_ip
 echo "$hostname" | sudo tee /etc/hostname > /dev/null
 sudo hostnamectl set-hostname "$hostname"
 
+interface=$(ip route list default | awk '$1 == "default" {print $5}')
+
 # Update package list
 sudo apt update
 
@@ -48,12 +50,12 @@ cat <<EOF | sudo tee -a /etc/wireguard/wg0.conf
 Address = 10.10.10.1/24, fdf2:de64:f67d:4add::/64
 MTU = 1420
 SaveConfig = true
-PostUp = ufw route allow in on wg0 out on eth0
-PostUp = iptables -t nat -I POSTROUTING -o eth0 -j MASQUERADE
-PostUp = ip6tables -t nat -I POSTROUTING -o eth0 -j MASQUERADE
-PreDown = ufw route delete allow in on wg0 out on eth0
-PreDown = iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
-PreDown = ip6tables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+PostUp = ufw route allow in on wg0 out on $interface
+PostUp = iptables -t nat -I POSTROUTING -o $interface -j MASQUERADE
+PostUp = ip6tables -t nat -I POSTROUTING -o $interface -j MASQUERADE
+PreDown = ufw route delete allow in on wg0 out on $interface
+PreDown = iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
+PreDown = ip6tables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 ListenPort = $wg_port
 PrivateKey = $private_key
 EOF
