@@ -2,10 +2,10 @@
 
 # Prompt the user to enter details
 read -p "Enter Hostname: " hostname
-read -p "Enter DNS: " dns
+read -p "Enter DNS (eg. 147.78.0.8,172.104.39.79): " dns
 read -p "Enter Wireguard Port: " wg_port
 read -p "Enter Dashboard Port: " dashboard_port
-read -p "Enter Peer Endpoint Allowed IPs: " allowed_ip
+read -p "Enter Peer Endpoint Allowed IPs (eg. 0.0.0.0/0,::/0): " allowed_ip
 
 # Update hostname
 echo "$hostname" | sudo tee /etc/hostname > /dev/null
