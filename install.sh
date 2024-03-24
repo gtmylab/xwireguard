@@ -76,20 +76,20 @@ PYTHON_PATH=$(which python3)
 # Update service file with the correct directory and python path
 sed -i "s|{{APP_ROOT}}|$DASHBOARD_DIR|g" "$SERVICE_FILE"
 sed -i "/Environment=\"VIRTUAL_ENV={{VIRTUAL_ENV}}\"/d" "$SERVICE_FILE"
-sed -i "s|{{VIRTUAL_ENV}}|$PYTHON_PATH|g" "$SERVICE_FILE"
+sed -i "s|{{VIRTUAL_ENV}}/bin/python3|$PYTHON_PATH|g" "$SERVICE_FILE"
 
 # Copy the service file to systemd folder
-sudo cp "$SERVICE_FILE" /etc/systemd/system/wg-dashboard.service
+cp "$SERVICE_FILE" /etc/systemd/system/wg-dashboard.service
 
 # Set permissions
-sudo chmod 664 /etc/systemd/system/wg-dashboard.service
+chmod 664 /etc/systemd/system/wg-dashboard.service
 
 # Reload systemd daemon
-sudo systemctl daemon-reload
+systemctl daemon-reload
 
 # Enable and start WGDashboard service
-sudo systemctl enable wg-dashboard.service
-sudo systemctl start wg-dashboard.service
+systemctl enable wg-dashboard.service
+systemctl restart wg-dashboard.service
 
 # Check if WGDashboard service is running
-sudo systemctl status wg-dashboard.service
+systemctl status wg-dashboard.service
