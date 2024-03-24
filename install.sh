@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# Prompt the user to enter details
+read -p "Enter Hostname: " hostname
+read -p "Enter DNS: " dns
+read -p "Enter Wireguard Port: " wg_port
+read -p "Enter Dashboard Port: " dashboard_port
+read -p "Enter Allowed IP: " allowed_ip
+
+# Update hostname
+echo "$hostname" | sudo tee /etc/hostname > /dev/null
+sudo hostnamectl set-hostname "$hostname"
+
 # Update package list
 sudo apt update
 
@@ -22,9 +33,8 @@ sudo sysctl -p
 
 # Configure firewall (UFW)
 sudo ufw disable
-sudo ufw allow 10086/tcp
-sudo ufw allow 3090/tcp
-sudo ufw allow 30303/udp
+sudo ufw allow $dashboard_port/tcp
+sudo ufw allow $wg_port/udp
 sudo ufw allow 53/udp
 sudo ufw allow OpenSSH
 sudo ufw --force enable
@@ -43,9 +53,11 @@ PostUp = ip6tables -t nat -I POSTROUTING -o eth0 -j MASQUERADE
 PreDown = ufw route delete allow in on wg0 out on eth0
 PreDown = iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
 PreDown = ip6tables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
-ListenPort = 30303
+ListenPort = $wg_port
 PrivateKey = $private_key
 EOF
+
+#sed -i "s|^ListenPort =.*|ListenPort = $wg_port|g" /etc/wireguard/wg0.conf
 
 # Enable Wireguard service
 sudo systemctl enable wg-quick@wg0.service
@@ -61,6 +73,12 @@ sudo ./wgd.sh install
 
 # Set permissions
 sudo chmod -R 755 /etc/wireguard
+
+# Seed to /root/wgdashboard/src/wg-dashboard.ini
+sudo sed -i "s|^app_port =.*|app_port = $dashboard_port|g" /root/wgdashboard/src/wg-dashboard.ini
+sudo sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" /root/wgdashboard/src/wg-dashboard.ini
+sudo sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" /root/wgdashboard/src/wg-dashboard.ini
+
 
 # Start WGDashboard
 sudo ./wgd.sh start
@@ -91,5 +109,11 @@ systemctl daemon-reload
 systemctl enable wg-dashboard.service
 systemctl restart wg-dashboard.service
 
+# Check if Wiregaurd service is running
+systemctl status wg-quick@wg0.service
+
 # Check if WGDashboard service is running
 systemctl status wg-dashboard.service
+
+# Display success message
+echo "Installation done successfully!"
