@@ -70,8 +70,12 @@ sudo ./wgd.sh start
 DASHBOARD_DIR=$(pwd)
 SERVICE_FILE="$DASHBOARD_DIR/wg-dashboard.service"
 
-# Update service file with the correct directory
+# Get the absolute path of python3 interpreter
+PYTHON_PATH=$(which python3)
+
+# Update service file with the correct directory and python path
 sed -i "s|{{APP_ROOT}}|$DASHBOARD_DIR|g" "$SERVICE_FILE"
+sed -i "s|{{VIRTUAL_ENV}}|$PYTHON_PATH|g" "$SERVICE_FILE"
 
 # Copy the service file to systemd folder
 sudo cp "$SERVICE_FILE" /etc/systemd/system/wg-dashboard.service
