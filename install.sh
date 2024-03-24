@@ -5,11 +5,12 @@ read -p "Enter Hostname: " hostname
 read -p "Enter DNS: " dns
 read -p "Enter Wireguard Port: " wg_port
 read -p "Enter Dashboard Port: " dashboard_port
-read -p "Enter Allowed IP: " allowed_ip
+read -p "Enter Peer Endpoint Allowed IPs: " allowed_ip
 
 # Update hostname
 echo "$hostname" | sudo tee /etc/hostname > /dev/null
 sudo hostnamectl set-hostname "$hostname"
+sudo su
 
 # Update package list
 sudo apt update
@@ -33,6 +34,7 @@ sudo sysctl -p
 
 # Configure firewall (UFW)
 sudo ufw disable
+sudo ufw allow 10086/tcp
 sudo ufw allow $dashboard_port/tcp
 sudo ufw allow $wg_port/udp
 sudo ufw allow 53/udp
@@ -74,12 +76,6 @@ sudo ./wgd.sh install
 # Set permissions
 sudo chmod -R 755 /etc/wireguard
 
-# Seed to /root/wgdashboard/src/wg-dashboard.ini
-sudo sed -i "s|^app_port =.*|app_port = $dashboard_port|g" /root/wgdashboard/src/wg-dashboard.ini
-sudo sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" /root/wgdashboard/src/wg-dashboard.ini
-sudo sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" /root/wgdashboard/src/wg-dashboard.ini
-
-
 # Start WGDashboard
 sudo ./wgd.sh start
 
@@ -109,11 +105,36 @@ systemctl daemon-reload
 systemctl enable wg-dashboard.service
 systemctl restart wg-dashboard.service
 
+# Seed to /root/wgdashboard/src/wg-dashboard.ini
+sudo sed -i "s|^app_port =.*|app_port = $dashboard_port|g" /root/wgdashboard/src/wg-dashboard.ini
+sudo sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" /root/wgdashboard/src/wg-dashboard.ini
+sudo sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" /root/wgdashboard/src/wg-dashboard.ini
+
+systemctl restart wg-dashboard.service
+
+
 # Check if Wiregaurd service is running
-systemctl status wg-quick@wg0.service
+#systemctl status wg-quick@wg0.service
 
 # Check if WGDashboard service is running
-systemctl status wg-dashboard.service
+#systemctl status wg-dashboard.service
 
 # Display success message
-echo "Installation done successfully!"
+#echo "Installation done successfully!"
+
+# Check if the services restarted successfully
+if sudo systemctl status wg-quick@wg0.service | grep -q "active (running)" && sudo systemctl status wg-dashboard.service | grep -q "active (running)"; then
+    # Get the server IP address
+    server_ip=$(curl -s ifconfig.me)
+
+    # Display success message
+    echo "Great! Installation was successful!"
+    echo "You can access Wireguard Dashboard now:"
+    echo "URL: http://$server_ip:$dashboard_port"
+    echo "Username: admin"
+    echo "Password: admin"
+    echo ""
+    echo "Go ahead and create your first peers and don't forget to change your password."
+else
+    echo "Error: Installation failed. Please check the services and try again."
+fi
