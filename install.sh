@@ -87,7 +87,7 @@ validate_hostname() {
     dashboard_port="${dashboard_port:-8080}"  # Default port if user hits Enter
     read -p "Please enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
     allowed_ip="${allowed_ip:-0.0.0.0/0,::/0}"  # Default IPs if user hits Enter
-    read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24, fdf2:de64:f67d:4add::/64]: " wg_address
+    read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24,fdf2:de64:f67d:4add::/64]: " wg_address
     wg_address="${wg_address:-10.10.10.1/24}"  # Default address if user hits Enter
 
 
