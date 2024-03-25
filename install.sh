@@ -9,7 +9,6 @@ fi
     # Check if sudo is installed, if not install it
 if ! command -v sudo &> /dev/null; then
     echo "sudo is not installed. Installing..."
-    su -
     apt update
     apt install -y sudo
 fi
