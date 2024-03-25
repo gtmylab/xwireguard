@@ -16,17 +16,17 @@ else
     exit 1
 fi
 # Function to install WireGuard on Debian
-install_wireguard_debian() {
+#install_wireguard_debian() {
     # Add the WireGuard repository
-    echo 'deb http://deb.debian.org/debian buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list
-    echo "deb http://deb.debian.org/debian/ unstable main" | tee /etc/apt/sources.list.d/unstable-wireguard.list
+ #   echo 'deb http://deb.debian.org/debian buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list
+  #  echo "deb http://deb.debian.org/debian/ unstable main" | tee /etc/apt/sources.list.d/unstable-wireguard.list
 
     # Update the package lists
    # apt-get update
 
     # Install WireGuard
    # apt-get install -y wireguard
-}
+#}
 
 
 # Clear screen
@@ -136,9 +136,9 @@ hostnamectl set-hostname "$hostname"
 interface=$(ip route list default | awk '$1 == "default" {print $5}')
 
 # Install WireGuard on Debian if detected
-if [[ "$(lsb_release -si)" == "Debian" ]]; then
-    install_wireguard_debian
-fi
+#if [[ "$(lsb_release -si)" == "Debian" ]]; then
+#    install_wireguard_debian
+#fi
 
 # Update package list
 apt update
