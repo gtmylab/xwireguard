@@ -143,7 +143,8 @@ fi
 apt update
 
 # Install Wireguard
-apt install wireguard -y
+#apt install wireguard -y
+apt install -y --fix-broken wireguard
 
 # Generate Wireguard keys
 private_key=$(wg genkey)
