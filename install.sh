@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Prompt the user to enter details
-#read -p "Enter Hostname: " hostname
 # Function to validate hostname
 validate_hostname() {
     local hostname="$1"
@@ -12,23 +10,50 @@ validate_hostname() {
     fi
 }
 
-# Prompt the user to enter hostname until a valid one is provided
-while true; do
-    read -p "Enter or set a Hostname: " hostname
-    if validate_hostname "$hostname"; then
-        break
-    else
-        echo "Invalid hostname. Please enter a valid hostname."
-    fi
-done
-read -p "Specify new DNS (eg. 147.78.0.8,172.104.39.79): " dns
-read -p "Enter Wireguard Port (eg. 51820): " wg_port
-read -p "Enter Dashboard Port (eg. 8080): " dashboard_port
-read -p "Enter Peer Endpoint Allowed IPs (eg. 0.0.0.0/0,::/0): " allowed_ip
-read -p "Choose WireGuard Private IP Address (eg. 10.10.10.1/24, fdf2:de64:f67d:4add::/64): " wg_address
+# Clear screen
+clear
 
+# Display ASCII art and introduction
+echo "  _|_|_|_|    _|_|_|      _|_|_|    _|_|_|_|    _|_|_|  _|    _|  _|_|_|_|"
+echo "    _|      _|    _|      _|    _|  _|          _|            _|      _|"
+echo "    _|    _|        _|    _|    _|    _|_|      _|_|_|    _|        _|"
+echo "    _|  _|            _|  _|    _|        _|    _|            _|    _|"
+echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
+echo ""
+echo "                                  WireGuard Admin Panel"
+echo ""
+echo "The following software will be installed on your system:"
+echo "   - Wire Guard Server"
+echo "   - WGDashboard"
+echo "   - WireGuard-Tools"
+echo "   - Gunicorn WSGI Server"
+echo "   - Python3-pip"
+echo ""
 
+# Prompt the user to continue
+read -p "Would you like to continue [y/n]: " choice
 
+if [[ "$choice" =~ ^[Yy]$ ]]; then
+    # Prompt the user to enter hostname until a valid one is provided
+    while true; do
+        read -p "Please enter FQDN hostname [eg. localhost]: " hostname
+        if validate_hostname "$hostname"; then
+            break
+        else
+            echo "Invalid hostname. Please enter a valid hostname."
+        fi
+    done
+
+    # Prompt for other installation details
+read -p "Please Specify new DNS [eg. 147.78.0.8,172.104.39.79]: " dns
+read -p "Please enter Wireguard Port [eg. 51820]: " wg_port
+read -p "Please enter Admin Dashboard Port [eg. 8080]: " dashboard_port
+read -p "Please enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
+read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24, fdf2:de64:f67d:4add::/64]: " wg_address
+
+    # Continue with the rest of your installation script...
+    echo "Continuing with installation..."
+    # Your installation commands here...
 # Update hostname
 echo "$hostname" | sudo tee /etc/hostname > /dev/null
 sudo hostnamectl set-hostname "$hostname"
@@ -167,4 +192,8 @@ if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     echo -e "\e[0m" # Reset font color
 else
     echo "Error: Installation failed. Please check the services and try again."
+fi
+else
+    echo "Installation aborted."
+    exit 0
 fi
