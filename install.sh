@@ -6,6 +6,14 @@ if [[ ! "$(lsb_release -cs)" =~ ^(groovy|buster)$ ]]; then
     exit 1
 fi
 
+    # Check if sudo is installed, if not install it
+if ! command -v sudo &> /dev/null; then
+    echo "sudo is not installed. Installing..."
+    su -
+    apt update
+    apt install -y sudo
+fi
+
 # Clear screen
 clear
 
@@ -95,13 +103,6 @@ done
     # Continue with the rest of your installation script...
     echo "Satrting with installation..."
     # Your installation commands here...
-    # Check if sudo is installed, if not install it
-if ! command -v sudo &> /dev/null; then
-    echo "sudo is not installed. Installing..."
-    su -
-    apt update
-    apt install -y sudo
-fi
 # Update hostname
 echo "$hostname" | sudo tee /etc/hostname > /dev/null
 sudo hostnamectl set-hostname "$hostname"
