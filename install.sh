@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Check if the system is Ubuntu 20.10 or Debian 10
+if [[ ! "$(lsb_release -cs)" =~ ^(groovy|buster)$ ]]; then
+    echo "ERROR: This installer is only compatible with Ubuntu 20.10 and Debian 10."
+    exit 1
+fi
 
 # Clear screen
 clear
