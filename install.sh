@@ -45,7 +45,7 @@ while true; do
     if validate_hostname "$hostname"; then
         break
     else
-        echo "Invalid hostname. Please enter a valid hostname."
+        echo "\e[1;31mInvalid hostname. Please enter a valid hostname.\e[0m"
     fi
 done
 
@@ -70,13 +70,10 @@ while true; do
 
     # Check if the passwords match
     if [ "$password" != "$confirm_password" ]; then
-        echo "Error: Passwords do not match. Please try again."
+        echo "\e[1;31mError: Passwords do not match. Please try again.\e[0m"
     else
         # Hash the password using SHA-256
         hashed_password=$(echo -n "$password" | sha256sum | awk '{print $1}')
-
-        # Display the hashed password
-        echo "Hashed Password: $hashed_password"
         break  # Exit the loop if passwords match
     fi
 done
