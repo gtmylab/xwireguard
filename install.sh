@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Check if the system is Ubuntu 20.10 or Debian 10
-if [[ ! "$(lsb_release -cs)" =~ ^(groovy|buster|Focal)$ ]]; then
-    echo "ERROR: This installer is only compatible with Ubuntu 20.10 and Debian 10."
+if [[ ! "$(lsb_release -cs)" =~ ^(groovy|buster|focal)$ ]]; then
+    echo -e "\e[1;31mERROR: This installer is only compatible with Ubuntu 20.04, 20.10, and Debian 10.\e[0m"
     exit 1
 fi
 
