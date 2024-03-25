@@ -50,7 +50,7 @@ while true; do
     if validate_hostname "$hostname"; then
         break
     else
-        echo "\e[1;31mInvalid hostname. Please enter a valid hostname.\e[0m"
+        echo -e "\e[1;31mInvalid hostname. Please enter a valid hostname.\e[0m"
     fi
 done
 
@@ -75,7 +75,7 @@ while true; do
 
     # Check if the passwords match
     if [ "$password" != "$confirm_password" ]; then
-        echo "\e[1;31mError: Passwords do not match. Please try again.\e[0m"
+        echo -e "\e[1;31mError: Passwords do not match. Please try again.\e[0m"
     else
         # Hash the password using SHA-256
         hashed_password=$(echo -n "$password" | sha256sum | awk '{print $1}')
@@ -220,8 +220,8 @@ if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     echo -e "\e[32mGreat! Installation was successful!"
     echo "You can access Wireguard Dashboard now:"
     echo "URL: http://$server_ip:$dashboard_port"
-    echo "Username: admin"
-    echo "Password: admin"
+    echo "Username: $username"
+    echo "Password: ***(hidden)***"
     echo ""
     echo "Go ahead and create your first peers and don't forget to change your password."
     echo -e "\e[0m" # Reset font color
