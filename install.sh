@@ -18,14 +18,16 @@ fi
 # Function to install WireGuard on Debian
 install_wireguard_debian() {
     # Add the WireGuard repository
+    echo 'deb http://deb.debian.org/debian buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list
     echo "deb http://deb.debian.org/debian/ unstable main" | tee /etc/apt/sources.list.d/unstable-wireguard.list
 
     # Update the package lists
-    apt-get update
+   # apt-get update
 
     # Install WireGuard
-    apt-get install -y wireguard
+   # apt-get install -y wireguard
 }
+
 
 # Clear screen
 clear
