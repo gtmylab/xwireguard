@@ -13,9 +13,11 @@ echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
 echo ""
 echo "                                  WireGuard Admin Panel"
 echo ""
+echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10 & Debian 10 system ONLY\e[0m"
+echo ""
 echo "The following software will be installed on your system:"
 echo "   - Wire Guard Server"
-echo "   - WGDashboard"
+echo "   - WGDashboard by donaldzou"
 echo "   - WireGuard-Tools"
 echo "   - Gunicorn WSGI Server"
 echo "   - Python3-pip"
@@ -54,8 +56,29 @@ read -p "Please enter Admin Dashboard Port [eg. 8080]: " dashboard_port
 read -p "Please enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
 read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24, fdf2:de64:f67d:4add::/64]: " wg_address
 
+# Prompt the user to enter a username
+read -p "Choose a Username: " username
+
+# Prompt the user to enter a password (without showing the input)
+read -s -p "Choose a Password: " password
+echo ""
+
+# Prompt the user to confirm the password
+read -s -p "Confirm Choosen Password: " confirm_password
+echo ""
+
+# Check if the passwords match
+if [ "$password" != "$confirm_password" ]; then
+    echo "Error: Passwords do not match. Please try again."
+    exit 1
+fi
+
+# Hash the password using SHA-256
+hashed_password=$(echo -n "$password" | sha256sum | awk '{print $1}')
+
+
     # Continue with the rest of your installation script...
-    echo "Continuing with installation..."
+    echo "Satrting with installation..."
     # Your installation commands here...
 # Update hostname
 echo "$hostname" | sudo tee /etc/hostname > /dev/null
@@ -156,10 +179,13 @@ systemctl daemon-reload
 systemctl enable wg-dashboard.service
 systemctl restart wg-dashboard.service
 
-# Seed to /root/wgdashboard/src/wg-dashboard.ini
-sudo sed -i "s|^app_port =.*|app_port = $dashboard_port|g" /root/wgdashboard/src/wg-dashboard.ini
-sudo sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" /root/wgdashboard/src/wg-dashboard.ini
-sudo sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" /root/wgdashboard/src/wg-dashboard.ini
+# Seed to wg-dashboard.ini
+sudo sed -i "s|^app_port =.*|app_port = $dashboard_port|g" $DASHBOARD_DIR/wg-dashboard.ini
+sudo sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" $DASHBOARD_DIR/wg-dashboard.ini
+sudo sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" $DASHBOARD_DIR/wg-dashboard.ini
+sudo sed -i "s|^password =.*|password = $hashed_password|g" $DASHBOARD_DIR/wg-dashboard.ini
+sudo sed -i "s|^username =.*|username = $username|g" $DASHBOARD_DIR/wg-dashboard.ini
+
 
 systemctl restart wg-dashboard.service
 
