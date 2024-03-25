@@ -6,7 +6,26 @@ if [[ ! "$(lsb_release -cs)" =~ ^(groovy|buster)$ ]]; then
     exit 1
 fi
 
+# Check if the system is Ubuntu 20.10 or Debian 10
+if [[ "$(lsb_release -si)" == "Ubuntu" && "$(lsb_release -sr)" == "20.10" ]]; then
+    echo "Detected Ubuntu 20.10."
+elif [[ "$(lsb_release -si)" == "Debian" && "$(lsb_release -sr)" == "10" ]]; then
+    echo "Detected Debian 10."
+else
+    echo "ERROR: This installer is only compatible with Ubuntu 20.10 and Debian 10."
+    exit 1
+fi
+# Function to install WireGuard on Debian
+install_wireguard_debian() {
+    # Add the WireGuard repository
+    echo "deb http://deb.debian.org/debian/ unstable main" | tee /etc/apt/sources.list.d/unstable-wireguard.list
 
+    # Update the package lists
+    apt-get update
+
+    # Install WireGuard
+    apt-get install -y wireguard
+}
 
 # Clear screen
 clear
@@ -73,7 +92,14 @@ validate_hostname() {
 
 
 # Prompt the user to enter a username
-read -p "Choose a Username: " username
+while true; do
+    read -p "Choose a Username: " username
+    if [[ -n "$username" ]]; then
+        break
+    else
+        echo "Username cannot be empty. Please specify a username."
+    fi
+done
 
 while true; do
     # Prompt the user to enter a password (without showing the input)
@@ -87,12 +113,15 @@ while true; do
     # Check if the passwords match
     if [ "$password" != "$confirm_password" ]; then
         echo -e "\e[1;31mError: Passwords do not match. Please try again.\e[0m"
+    elif [ -z "$password" ]; then
+        echo "Password cannot be empty. Please specify a password."
     else
         # Hash the password using SHA-256
         hashed_password=$(echo -n "$password" | sha256sum | awk '{print $1}')
         break  # Exit the loop if passwords match
     fi
 done
+
 
     # Continue with the rest of your installation script...
     echo "Satrting with installation..."
@@ -102,6 +131,11 @@ echo "$hostname" | tee /etc/hostname > /dev/null
 hostnamectl set-hostname "$hostname"
 
 interface=$(ip route list default | awk '$1 == "default" {print $5}')
+
+# Install WireGuard on Debian if detected
+if [[ "$(lsb_release -si)" == "Debian" ]]; then
+    install_wireguard_debian
+fi
 
 # Update package list
 apt update
