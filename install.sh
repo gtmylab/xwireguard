@@ -42,6 +42,7 @@ echo ""
 echo "                                  WireGuard Admin Panel"
 echo ""
 echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10 & Debian 10 system ONLY\e[0m"
+echo -e "\e[32mRECOMMENDED ==> Ubuntu 20.10 \e[0m"
 echo ""
 echo "The following software will be installed on your system:"
 echo "   - Wire Guard Server"
@@ -143,8 +144,8 @@ fi
 apt update
 
 # Install Wireguard
-#apt install wireguard -y
-apt install -y --fix-broken wireguard
+apt install wireguard -y
+#apt install -y --fix-broken wireguard
 
 # Generate Wireguard keys
 private_key=$(wg genkey)
