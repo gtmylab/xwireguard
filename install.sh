@@ -59,23 +59,27 @@ read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24, fdf2:de64:f67d:
 # Prompt the user to enter a username
 read -p "Choose a Username: " username
 
-# Prompt the user to enter a password (without showing the input)
-read -s -p "Choose a Password: " password
-echo ""
+while true; do
+    # Prompt the user to enter a password (without showing the input)
+    read -s -p "Choose a Password: " password
+    echo ""
 
-# Prompt the user to confirm the password
-read -s -p "Confirm Choosen Password: " confirm_password
-echo ""
+    # Prompt the user to confirm the password
+    read -s -p "Confirm Password: " confirm_password
+    echo ""
 
-# Check if the passwords match
-if [ "$password" != "$confirm_password" ]; then
-    echo "Error: Passwords do not match. Please try again."
-    exit 1
-fi
+    # Check if the passwords match
+    if [ "$password" != "$confirm_password" ]; then
+        echo "Error: Passwords do not match. Please try again."
+    else
+        # Hash the password using SHA-256
+        hashed_password=$(echo -n "$password" | sha256sum | awk '{print $1}')
 
-# Hash the password using SHA-256
-hashed_password=$(echo -n "$password" | sha256sum | awk '{print $1}')
-
+        # Display the hashed password
+        echo "Hashed Password: $hashed_password"
+        break  # Exit the loop if passwords match
+    fi
+done
 
     # Continue with the rest of your installation script...
     echo "Satrting with installation..."
