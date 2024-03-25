@@ -6,6 +6,16 @@ if [[ ! "$(lsb_release -cs)" =~ ^(groovy|buster)$ ]]; then
     exit 1
 fi
 
+# Change directory to /etc
+cd /etc || exit
+
+# Create a directory xwireguard if it doesn't exist
+if [ ! -d "xwireguard" ]; then
+    sudo mkdir xwireguard
+fi
+
+# Change directory to /etc/xwireguard
+cd xwireguard || exit
 # Clear screen
 clear
 
@@ -44,22 +54,31 @@ validate_hostname() {
     fi
 }
 
-# Prompt the user to enter hostname until a valid one is provided
-while true; do
-    read -p "Please enter FQDN hostname [eg. localhost]: " hostname
-    if validate_hostname "$hostname"; then
-        break
-    else
-        echo -e "\e[1;31mInvalid hostname. Please enter a valid hostname.\e[0m"
-    fi
-done
+    # Prompt the user to enter hostname until a valid one is provided
+    while true; do
+        read -p "Please enter FQDN hostname [eg. localhost]: " hostname
+        if [[ -z "$hostname" ]]; then
+            hostname="localhost"  # Default hostname if user hits Enter
+            break
+        elif validate_hostname "$hostname"; then
+            break
+        else
+            echo "Invalid hostname. Please enter a valid hostname."
+        fi
+    done
 
-    # Prompt for other installation details
-read -p "Please Specify new DNS [eg. 147.78.0.8,172.104.39.79]: " dns
-read -p "Please enter Wireguard Port [eg. 51820]: " wg_port
-read -p "Please enter Admin Dashboard Port [eg. 8080]: " dashboard_port
-read -p "Please enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
-read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24, fdf2:de64:f67d:4add::/64]: " wg_address
+   # Prompt for other installation details with default values
+    read -p "Please Specify new DNS [eg. 147.78.0.8,172.104.39.79]: " dns
+    dns="${dns:-147.78.0.8,172.104.39.79}"  # Default DNS if user hits Enter
+    read -p "Please enter Wireguard Port [eg. 51820]: " wg_port
+    wg_port="${wg_port:-51820}"  # Default port if user hits Enter
+    read -p "Please enter Admin Dashboard Port [eg. 8080]: " dashboard_port
+    dashboard_port="${dashboard_port:-8080}"  # Default port if user hits Enter
+    read -p "Please enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
+    allowed_ip="${allowed_ip:-0.0.0.0/0,::/0}"  # Default IPs if user hits Enter
+    read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24, fdf2:de64:f67d:4add::/64]: " wg_address
+    wg_address="${wg_address:-10.10.10.1/24}"  # Default address if user hits Enter
+
 
 # Prompt the user to enter a username
 read -p "Choose a Username: " username
@@ -86,6 +105,13 @@ done
     # Continue with the rest of your installation script...
     echo "Satrting with installation..."
     # Your installation commands here...
+    # Check if sudo is installed, if not install it
+if ! command -v sudo &> /dev/null; then
+    echo "sudo is not installed. Installing..."
+    su -
+    apt update
+    apt install -y sudo
+fi
 # Update hostname
 echo "$hostname" | sudo tee /etc/hostname > /dev/null
 sudo hostnamectl set-hostname "$hostname"
