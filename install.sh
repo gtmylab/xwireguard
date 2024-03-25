@@ -30,7 +30,7 @@ if [[ "$choice" =~ ^[Yy]$ ]]; then
 # Function to validate hostname
 validate_hostname() {
     local hostname="$1"
-    if [[ "$hostname" =~ ^[a-zA-Z0-9\-\.]+$ ]]; then
+        if [[ "$hostname" =~ ^[a-zA-Z0-9\.\-_]+$ ]]; then
         return 0  # Valid hostname
     else
         return 1  # Invalid hostname
