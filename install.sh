@@ -6,16 +6,6 @@ if [[ ! "$(lsb_release -cs)" =~ ^(groovy|buster)$ ]]; then
     exit 1
 fi
 
-# Change directory to /etc
-cd /etc || exit
-
-# Create a directory xwireguard if it doesn't exist
-if [ ! -d "xwireguard" ]; then
-    sudo mkdir xwireguard
-fi
-
-# Change directory to /etc/xwireguard
-cd xwireguard || exit
 # Clear screen
 clear
 
@@ -171,6 +161,16 @@ EOF
 sudo systemctl enable wg-quick@wg0.service
 sudo systemctl start wg-quick@wg0.service
 
+# Change directory to /etc
+cd /etc || exit
+
+# Create a directory xwireguard if it doesn't exist
+if [ ! -d "xwireguard" ]; then
+    sudo mkdir xwireguard
+fi
+
+# Change directory to /etc/xwireguard
+cd xwireguard || exit
 
 # Install WGDashboard
 git clone -b v3.1-dev https://github.com/donaldzou/WGDashboard.git wgdashboard
