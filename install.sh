@@ -8,14 +8,14 @@ fi
 
 # Check if the system is Ubuntu 20.10 or Debian 10
 #if [[ "$(lsb_release -si)" == "Ubuntu" && "$(lsb_release -sr)" == "20.10" ]]; then
-if [[ "$(lsb_release -si)" == "Ubuntu" && ( "$(lsb_release -sr)" == "20.10" || "$(lsb_release -sr)" == "20.04" ) ]]; then
-    echo "Detected Ubuntu"
-elif [[ "$(lsb_release -si)" == "Debian" && "$(lsb_release -sr)" == "10" ]]; then
-    echo "Detected Debian 10."
-else
-    echo "ERROR: This installer is only compatible with Ubuntu 20.04/20.10 and Debian 10."
-    exit 1
-fi
+#if [[ "$(lsb_release -si)" == "Ubuntu" && ( "$(lsb_release -sr)" == "20.10" || "$(lsb_release -sr)" == "20.04" ) ]]; then
+ #   echo "Detected Ubuntu"
+#elif [[ "$(lsb_release -si)" == "Debian" && "$(lsb_release -sr)" == "10" ]]; then
+  #  echo "Detected Debian 10."
+#else
+ #   echo "ERROR: This installer is only compatible with Ubuntu 20.04/20.10 and Debian 10."
+   # exit 1
+#fi
 # Function to install WireGuard on Debian
 #install_wireguard_debian() {
     # Add the WireGuard repository
