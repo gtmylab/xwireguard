@@ -1,14 +1,5 @@
 #!/bin/bash
 
-# Function to validate hostname
-validate_hostname() {
-    local hostname="$1"
-    if [[ "$hostname" =~ ^[a-zA-Z0-9\-\.]+$ ]]; then
-        return 0  # Valid hostname
-    else
-        return 1  # Invalid hostname
-    fi
-}
 
 # Clear screen
 clear
@@ -35,14 +26,26 @@ read -p "Would you like to continue [y/n]: " choice
 
 if [[ "$choice" =~ ^[Yy]$ ]]; then
     # Prompt the user to enter hostname until a valid one is provided
-    while true; do
-        read -p "Please enter FQDN hostname [eg. localhost]: " hostname
-        if validate_hostname "$hostname"; then
-            break
-        else
-            echo "Invalid hostname. Please enter a valid hostname."
-        fi
-    done
+#read -p "Enter Hostname: " hostname
+# Function to validate hostname
+validate_hostname() {
+    local hostname="$1"
+    if [[ "$hostname" =~ ^[a-zA-Z0-9\-\.]+$ ]]; then
+        return 0  # Valid hostname
+    else
+        return 1  # Invalid hostname
+    fi
+}
+
+# Prompt the user to enter hostname until a valid one is provided
+while true; do
+    read -p "Please enter FQDN hostname [eg. localhost]: " hostname
+    if validate_hostname "$hostname"; then
+        break
+    else
+        echo "Invalid hostname. Please enter a valid hostname."
+    fi
+done
 
     # Prompt for other installation details
 read -p "Please Specify new DNS [eg. 147.78.0.8,172.104.39.79]: " dns
