@@ -6,21 +6,6 @@ if [[ ! "$(lsb_release -cs)" =~ ^(groovy|buster)$ ]]; then
     exit 1
 fi
 
-# Check if sudo is installed, if not install it
-if ! command -v sudo &> /dev/null; then
-    echo "sudo is not installed. Attempting to install..."
-    if [ -n "$(command -v apt)" ]; then
-        apt update
-        apt install -y sudo
-    elif [ -n "$(command -v yum)" ]; then
-        yum install -y sudo
-    elif [ -n "$(command -v dnf)" ]; then
-        dnf install -y sudo
-    else
-        echo "Error: Cannot install sudo. Please install it manually."
-        exit 1
-    fi
-fi
 
 # Clear screen
 clear
@@ -112,44 +97,44 @@ done
     echo "Satrting with installation..."
     # Your installation commands here...
 # Update hostname
-echo "$hostname" | sudo tee /etc/hostname > /dev/null
-sudo hostnamectl set-hostname "$hostname"
+echo "$hostname" | tee /etc/hostname > /dev/null
+hostnamectl set-hostname "$hostname"
 
 interface=$(ip route list default | awk '$1 == "default" {print $5}')
 
 # Update package list
-sudo apt update
+apt update
 
 # Install Wireguard
-sudo apt install wireguard -y
+apt install wireguard -y
 
 # Generate Wireguard keys
 private_key=$(wg genkey)
-echo "$private_key" | sudo tee /etc/wireguard/private.key
+echo "$private_key" | tee /etc/wireguard/private.key
 public_key=$(echo "$private_key" | wg pubkey)
 #echo "PrivateKey = $private_key" | sudo tee -a /etc/wireguard/wg0.conf
 #echo "PublicKey = $public_key" | sudo tee -a /etc/wireguard/wg0.conf
 
 # Enable IPv4 and IPv6 forwarding
-sudo sed -i '/^#net.ipv4.ip_forward=1/s/^#//' /etc/sysctl.conf
-sudo sed -i '/^#net.ipv6.conf.all.forwarding=1/s/^#//' /etc/sysctl.conf
+sed -i '/^#net.ipv4.ip_forward=1/s/^#//' /etc/sysctl.conf
+sed -i '/^#net.ipv6.conf.all.forwarding=1/s/^#//' /etc/sysctl.conf
 
 # Apply changes
-sudo sysctl -p
+sysctl -p
 
 # Configure firewall (UFW)
-sudo ufw disable
-sudo ufw allow 10086/tcp
-sudo ufw allow $dashboard_port/tcp
-sudo ufw allow $wg_port/udp
-sudo ufw allow 53/udp
-sudo ufw allow OpenSSH
-sudo ufw --force enable
+ufw disable
+ufw allow 10086/tcp
+ufw allow $dashboard_port/tcp
+ufw allow $wg_port/udp
+ufw allow 53/udp
+ufw allow OpenSSH
+ufw --force enable
 
 
 
 # Add Wireguard configuration
-cat <<EOF | sudo tee -a /etc/wireguard/wg0.conf
+cat <<EOF | tee -a /etc/wireguard/wg0.conf
 [Interface]
 Address = $wg_address
 MTU = 1420
@@ -167,15 +152,15 @@ EOF
 #sed -i "s|^ListenPort =.*|ListenPort = $wg_port|g" /etc/wireguard/wg0.conf
 
 # Enable Wireguard service
-sudo systemctl enable wg-quick@wg0.service
-sudo systemctl start wg-quick@wg0.service
+systemctl enable wg-quick@wg0.service
+systemctl start wg-quick@wg0.service
 
 # Change directory to /etc
 cd /etc || exit
 
 # Create a directory xwireguard if it doesn't exist
 if [ ! -d "xwireguard" ]; then
-    sudo mkdir xwireguard
+    mkdir xwireguard
 fi
 
 # Change directory to /etc/xwireguard
@@ -184,15 +169,15 @@ cd xwireguard || exit
 # Install WGDashboard
 git clone -b v3.1-dev https://github.com/donaldzou/WGDashboard.git wgdashboard
 cd wgdashboard/src
-sudo apt install python3-pip -y && pip install gunicorn && pip install -r requirements.txt --ignore-installed
-sudo chmod u+x wgd.sh
-sudo ./wgd.sh install
+apt install python3-pip -y && pip install gunicorn && pip install -r requirements.txt --ignore-installed
+chmod u+x wgd.sh
+./wgd.sh install
 
 # Set permissions
-sudo chmod -R 755 /etc/wireguard
+chmod -R 755 /etc/wireguard
 
 # Start WGDashboard
-sudo ./wgd.sh start
+./wgd.sh start
 
 
 # Autostart WGDashboard on boot
@@ -221,11 +206,11 @@ systemctl enable wg-dashboard.service
 systemctl restart wg-dashboard.service
 
 # Seed to wg-dashboard.ini
-sudo sed -i "s|^app_port =.*|app_port = $dashboard_port|g" $DASHBOARD_DIR/wg-dashboard.ini
-sudo sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" $DASHBOARD_DIR/wg-dashboard.ini
-sudo sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" $DASHBOARD_DIR/wg-dashboard.ini
-sudo sed -i "s|^password =.*|password = $hashed_password|g" $DASHBOARD_DIR/wg-dashboard.ini
-sudo sed -i "s|^username =.*|username = $username|g" $DASHBOARD_DIR/wg-dashboard.ini
+sed -i "s|^app_port =.*|app_port = $dashboard_port|g" $DASHBOARD_DIR/wg-dashboard.ini
+sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" $DASHBOARD_DIR/wg-dashboard.ini
+sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" $DASHBOARD_DIR/wg-dashboard.ini
+sed -i "s|^password =.*|password = $hashed_password|g" $DASHBOARD_DIR/wg-dashboard.ini
+sed -i "s|^username =.*|username = $username|g" $DASHBOARD_DIR/wg-dashboard.ini
 
 
 systemctl restart wg-dashboard.service
