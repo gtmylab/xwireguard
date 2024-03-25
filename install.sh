@@ -6,11 +6,20 @@ if [[ ! "$(lsb_release -cs)" =~ ^(groovy|buster)$ ]]; then
     exit 1
 fi
 
-    # Check if sudo is installed, if not install it
+# Check if sudo is installed, if not install it
 if ! command -v sudo &> /dev/null; then
-    echo "sudo is not installed. Installing..."
-    apt update
-    apt install -y sudo
+    echo "sudo is not installed. Attempting to install..."
+    if [ -n "$(command -v apt)" ]; then
+        apt update
+        apt install -y sudo
+    elif [ -n "$(command -v yum)" ]; then
+        yum install -y sudo
+    elif [ -n "$(command -v dnf)" ]; then
+        dnf install -y sudo
+    else
+        echo "Error: Cannot install sudo. Please install it manually."
+        exit 1
+    fi
 fi
 
 # Clear screen
