@@ -18,7 +18,14 @@ fi
     # Install WireGuard
    # apt-get install -y wireguard
 #}
-
+# Function to check if a package is installed
+check_package_installed() {
+    if ! command -v "$1" &> /dev/null; then
+        return 1
+    else
+        return 0
+    fi
+}
 
 # Clear screen
 clear
@@ -30,17 +37,19 @@ echo "    _|    _|        _|    _|    _|    _|_|      _|_|_|    _|        _|"
 echo "    _|  _|            _|  _|    _|        _|    _|            _|    _|"
 echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
 echo ""
-echo "                                  WireGuard Admin Panel"
+echo "                                  xWireGuard Management Server"
 echo ""
 echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10 & Debian 10 system ONLY\e[0m"
 echo -e "\e[32mRECOMMENDED ==> Ubuntu 20.10 \e[0m"
 echo ""
 echo "The following software will be installed on your system:"
 echo "   - Wire Guard Server"
-echo "   - WGDashboard by donaldzou"
 echo "   - WireGuard-Tools"
+echo "   - WGDashboard by donaldzou"
 echo "   - Gunicorn WSGI Server"
 echo "   - Python3-pip"
+echo "   - Git"
+echo "   - UFW - firewall"
 echo ""
 
 # Prompt the user to continue
@@ -134,9 +143,23 @@ interface=$(ip route list default | awk '$1 == "default" {print $5}')
 # Update package list
 apt update
 
-# Install Wireguard
+# Install Wireguard 
 apt install wireguard -y
 #apt install -y --fix-broken wireguard
+
+# Install git if not installed
+if ! check_package_installed git; then
+    echo "Installing git..."
+    apt-get update
+    apt-get install -y git
+fi
+
+# Install ufw if not installed
+if ! check_package_installed ufw; then
+    echo "Installing ufw..."
+    apt-get update
+    apt-get install -y ufw
+fi
 
 # Generate Wireguard keys
 private_key=$(wg genkey)
