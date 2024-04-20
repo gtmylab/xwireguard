@@ -52,6 +52,29 @@ echo "   - Git"
 echo "   - UFW - firewall"
 echo ""
 
+
+# Function to prompt user to select an IP address
+select_ip_address() {
+    local address_family="$1"
+    echo "Available $address_family addresses:"
+    ip addr show | awk -v family="$address_family" '/inet/ && $NF !~ /lo/ {if (family == "IPv4") {if ($2 ~ /^inet/) print $2} else {if ($2 ~ /^inet6/) print $2}}'
+    read -p "Enter the $address_family address you want to use: " selected_ip
+    echo "Selected $address_family address: $selected_ip"
+}
+
+# Check if multiple IPv4 addresses are configured
+if ip addr show | grep -q 'inet .* secondary'; then
+    echo "Multiple IPv4 addresses are configured."
+    select_ip_address "IPv4"
+fi
+
+# Check if multiple IPv6 addresses are configured
+if ip addr show | grep -q 'inet6 .* secondary'; then
+    echo "Multiple IPv6 addresses are configured."
+    select_ip_address "IPv6"
+fi
+
+
 # Prompt the user to continue
 read -p "Would you like to continue [y/n]: " choice
 
