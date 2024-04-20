@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# Check if the system is Ubuntu 20.10 or Debian 10
-#if [[ ! "$(lsb_release -cs)" =~ ^(groovy|focal|buster)$ ]]; then
- #   echo -e "\e[1;31mERROR: This installer is only compatible with Ubuntu 20.04, 20.10, and Debian 10.\e[0m"
-  #  exit 1
-#fi
-
-
 # Function to check if a package is installed
 check_package_installed() {
     if ! command -v "$1" &> /dev/null; then
@@ -161,11 +154,6 @@ fi
 echo "$hostname" | tee /etc/hostname > /dev/null
 hostnamectl set-hostname "$hostname"
 
-
-# Install WireGuard on Debian if detected
-#if [[ "$(lsb_release -si)" == "Debian" ]]; then
-#    install_wireguard_debian
-#fi
 
 # Update package list
 apt update
@@ -342,18 +330,20 @@ echo "Wireguard Status: $wg_status"
 echo "WGDashboard Status: $dashboard_status"
 
 if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
-    # Get the server IP address
-    server_ip=$(curl -s ifconfig.me)
+    # Get the server IPv4 address
+    server_ip=$(curl -s4 ifconfig.me)
 
     # Display success message in green font
     echo -e "\e[32mGreat! Installation was successful!"
     echo "You can access Wireguard Dashboard now:"
-    echo "URL: http://$server_ip:$dashboard_port"
+    echo 'URL: http://'"$server_ip:$dashboard_port"
     echo "Username: $username"
     echo "Password: ***(hidden)***"
     echo ""
-    echo "Go ahead and create your first peers and don't forget to change your password."
+    echo "A system REBOOT will be triggered after that. Go ahead and create your first peers and don't forget to change your password."
     echo -e "\e[0m" # Reset font color
+
+    reboot
 else
     echo "Error: Installation failed. Please check the services and try again."
 fi
