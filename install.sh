@@ -112,11 +112,9 @@ done
     read -p "Please enter Admin Dashboard Port [eg. 8080]: " dashboard_port
     dashboard_port="${dashboard_port:-8080}"  # Default port if user hits Enter
 
-    read -p "Enter enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
-    allowed_ip="${allowed_ip:-0.0.0.0/0,::/0}"  # Default IPs if user hits Enter
-
   #  read -p "Enter WireGuard Private IP Address(s) [eg. 10.10.10.1/24,fdf2:de64:f67d:4add::/64]: " wg_address
  #   wg_address="${wg_address:-10.10.10.1/24,fdf2:de64:f67d:4add::/64}"  # Default address if user hits Enter
+echo ""
 
 # Function to generate IPv4 addresses
 generate_ipv4() {
@@ -147,10 +145,10 @@ generate_ipv6() {
     local range_type=$1
     case $range_type in
         1)
-            ipv6_address_pvt="FC00::$(printf '%02x%02x:%02x%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256))))/64"
+            ipv6_address_pvt="FC00::$(printf '%02x%02x:%02x%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))/64"
             ;;
         2)
-            ipv6_address_pvt="FD00::$(printf '%02x%02x:%02x%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256))))/64"
+            ipv6_address_pvt="FD00::$(printf '%02x%02x:%02x%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))/64"
             ;;
         3)
             read -p "Enter custom Private IPv6 address: " ipv6_address_pvt
@@ -195,6 +193,10 @@ case $ipv6_option in
         echo "Invalid option for IPv6 range."
         ;;
 esac
+echo ""
+
+read -p "Enter enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
+allowed_ip="${allowed_ip:-0.0.0.0/0,::/0}"  # Default IPs if user hits Enter
 
 # Check if IPv6 is available
 if ip -6 addr show $interface | grep -q inet6; then
@@ -230,9 +232,11 @@ if [ "$ipv6_available" = true ]; then
     echo "Selected IPv6 Address: $ipv6_address"
 fi
 
+echo ""
 
     # Continue with the rest of your installation script...
     echo "Starting with installation..."
+    echo ""
     # Your installation commands here...
 # Update hostname
 echo "$hostname" | tee /etc/hostname > /dev/null
