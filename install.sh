@@ -39,7 +39,7 @@ echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
 echo ""
 echo "                                  xWireGuard Management Server"
 echo ""
-echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10 & Debian 10 system ONLY.\e[0m"
+echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10 & Debian 10 system ONLY\e[0m"
 echo -e "\e[32mRECOMMENDED ==> Ubuntu 20.10 \e[0m"
 echo ""
 echo "The following software will be installed on your system:"
@@ -52,26 +52,6 @@ echo "   - Git"
 echo "   - UFW - firewall"
 echo ""
 
-# Function to prompt user to select an IP address
-select_ip_address() {
-    local address_family="$1"
-    echo "Available $address_family addresses:"
-    ip addr show | awk -v family="$address_family" '/inet/ && $NF !~ /lo/ {if (family == "IPv4") {if ($2 ~ /^inet/) print $2} else {if ($2 ~ /^inet6/) print $2}}'
-    read -p "Enter the $address_family address you want to use: " selected_ip
-    echo "Selected $address_family address: $selected_ip"
-}
-
-# Check if multiple IPv4 addresses are configured
-if ip addr show | grep -q 'inet .* secondary'; then
-    echo "Multiple IPv4 addresses are configured."
-    select_ip_address "IPv4"
-fi
-
-# Check if multiple IPv6 addresses are configured
-if ip addr show | grep -q 'inet6 .* secondary'; then
-    echo "Multiple IPv6 addresses are configured."
-    select_ip_address "IPv6"
-fi
 
 # Prompt the user to continue
 read -p "Would you like to continue [y/n]: " choice
@@ -114,19 +94,23 @@ validate_hostname() {
     read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24,fdf2:de64:f67d:4add::/64]: " wg_address
     wg_address="${wg_address:-10.10.10.1/24}"  # Default address if user hits Enter
 
-   # Prompt the user to select an IPv4 address if multiple are available
-    if ip addr show | grep -q 'inet .* secondary'; then
-        echo "Multiple IPv4 addresses are configured."
-        read -p "Choose the IPv4 address to use: " ipv4_address
-        ipv4_address="${ipv4_address:-10.10.10.1/24}"  # Default address if user hits Enter
-    fi
+# Retrieve IPv4 addresses and join them with commas
+ipv4_address=$(ip -o -4 addr show eth0 | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
 
-    # Prompt the user to select an IPv6 address if multiple are available
-    if ip addr show | grep -q 'inet6 .* secondary'; then
-        echo "Multiple IPv6 addresses are configured."
-        read -p "Choose the IPv6 address to use: " ipv6_address
-        ipv6_address="${ipv6_address:-10.10.10.1/24}"  # Default address if user hits Enter
-    fi
+# Remove the trailing comma if there are multiple IPv4 addresses
+ipv4_address=${ipv4_address%,}
+
+# Retrieve IPv6 addresses and join them with commas
+ipv6_address=$(ip -o -6 addr show eth0 | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
+
+# Remove the trailing comma if there are multiple IPv6 addresses
+ipv6_address=${ipv6_address%,}
+
+read -p "Choose the IPV4 to use [$ipv4_address]: " chosen_ipv4
+ipv4_address="${chosen_ipv4:-$ipv4_address}"  # Default address if user hits Enter
+
+read -p "Choose the IPV6 to use [$ipv6_address]: " chosen_ipv6
+ipv6_address="${chosen_ipv6:-$ipv6_address}"  # Default address if user hits Enter
 
 # Prompt the user to enter a username
 while true; do
