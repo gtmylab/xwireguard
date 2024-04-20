@@ -89,10 +89,17 @@ validate_hostname() {
     wg_port="${wg_port:-51820}"  # Default port if user hits Enter
     read -p "Please enter Admin Dashboard Port [eg. 8080]: " dashboard_port
     dashboard_port="${dashboard_port:-8080}"  # Default port if user hits Enter
-    read -p "Please enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
+    read -p "Enter enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
     allowed_ip="${allowed_ip:-0.0.0.0/0,::/0}"  # Default IPs if user hits Enter
-    read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24,fdf2:de64:f67d:4add::/64]: " wg_address
+    read -p "Enter WireGuard Private IP Address [eg. 10.10.10.1/24,fdf2:de64:f67d:4add::/64]: " wg_address
     wg_address="${wg_address:-10.10.10.1/24}"  # Default address if user hits Enter
+
+# Check if IPv6 is available
+if ip -6 addr show eth0 | grep -q inet6; then
+    ipv6_available=true
+else
+    ipv6_available=false
+fi
 
 # Retrieve IPv4 addresses and join them with commas
 ipv4_address=$(ip -o -4 addr show eth0 | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
@@ -100,21 +107,30 @@ ipv4_address=$(ip -o -4 addr show eth0 | awk '{print $4}' | cut -d'/' -f1 | tr '
 # Remove the trailing comma if there are multiple IPv4 addresses
 ipv4_address=${ipv4_address%,}
 
-# Retrieve IPv6 addresses and join them with commas
-ipv6_address=$(ip -o -6 addr show eth0 | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
 
-# Remove the trailing comma if there are multiple IPv6 addresses
-ipv6_address=${ipv6_address%,}
+# Display IPv6 addresses if available
+if [ "$ipv6_available" = true ]; then
+    # Retrieve IPv6 addresses and join them with commas
+    ipv6_address=$(ip -o -6 addr show eth0 | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
 
-read -p "Choose the IPV4 to use [$ipv4_address]: " chosen_ipv4
+    # Remove the trailing comma if there are multiple IPv6 addresses
+    ipv6_address=${ipv6_address%,}
+
+    read -p "Enter the Ipv6 to use [$ipv6_address]: " chosen_ipv6
+    ipv6_address="${chosen_ipv6:-$ipv6_address}"  # Default address if user hits Enter
+fi
+
+read -p "Enter the Public IPv4 to use [$ipv4_address]: " chosen_ipv4
 ipv4_address="${chosen_ipv4:-$ipv4_address}"  # Default address if user hits Enter
 
-read -p "Choose the IPV6 to use [$ipv6_address]: " chosen_ipv6
-ipv6_address="${chosen_ipv6:-$ipv6_address}"  # Default address if user hits Enter
+echo "Selected IPv4 Address: $ipv4_address"
+if [ "$ipv6_available" = true ]; then
+    echo "Selected IPv6 Address: $ipv6_address"
+fi
 
 # Prompt the user to enter a username
 while true; do
-    read -p "Choose a Username: " username
+    read -p "Specify a Username for WGDashboard: " username
     if [[ -n "$username" ]]; then
         break
     else
@@ -124,7 +140,7 @@ done
 
 while true; do
     # Prompt the user to enter a password (without showing the input)
-    read -s -p "Choose a Password: " password
+    read -s -p "Specify a Password: " password
     echo ""
 
     # Prompt the user to confirm the password
