@@ -6,15 +6,6 @@ if [[ ! "$(lsb_release -cs)" =~ ^(groovy|focal|buster)$ ]]; then
     exit 1
 fi
 
-# Function to prompt user to select an IP address
-select_ip_address() {
-    local address_family="$1"
-    echo "Available $address_family addresses:"
-    ip addr show | awk -v family="$address_family" '/inet/ && $NF !~ /lo/ {if (family == "IPv4") {if ($2 ~ /^inet/) print $2} else {if ($2 ~ /^inet6/) print $2}}'
-    read -p "Enter the $address_family address you want to use: " selected_ip
-    echo "Selected $address_family address: $selected_ip"
-}
-
 # Function to install WireGuard on Debian
 #install_wireguard_debian() {
     # Add the WireGuard repository
@@ -61,6 +52,26 @@ echo "   - Git"
 echo "   - UFW - firewall"
 echo ""
 
+# Function to prompt user to select an IP address
+select_ip_address() {
+    local address_family="$1"
+    echo "Available $address_family addresses:"
+    ip addr show | awk -v family="$address_family" '/inet/ && $NF !~ /lo/ {if (family == "IPv4") {if ($2 ~ /^inet/) print $2} else {if ($2 ~ /^inet6/) print $2}}'
+    read -p "Enter the $address_family address you want to use: " selected_ip
+    echo "Selected $address_family address: $selected_ip"
+}
+
+# Check if multiple IPv4 addresses are configured
+if ip addr show | grep -q 'inet .* secondary'; then
+    echo "Multiple IPv4 addresses are configured."
+    select_ip_address "IPv4"
+fi
+
+# Check if multiple IPv6 addresses are configured
+if ip addr show | grep -q 'inet6 .* secondary'; then
+    echo "Multiple IPv6 addresses are configured."
+    select_ip_address "IPv6"
+fi
 
 # Prompt the user to continue
 read -p "Would you like to continue [y/n]: " choice
@@ -103,17 +114,20 @@ validate_hostname() {
     read -p "Choose WireGuard Private IP Address [eg. 10.10.10.1/24,fdf2:de64:f67d:4add::/64]: " wg_address
     wg_address="${wg_address:-10.10.10.1/24}"  # Default address if user hits Enter
 
-  # Prompt the user to select an IPv4 address if multiple are available
+   # Prompt the user to select an IPv4 address if multiple are available
     if ip addr show | grep -q 'inet .* secondary'; then
         echo "Multiple IPv4 addresses are configured."
-        select_ip_address "IPv4"
+        read -p "Choose the IPv4 address to use: " ipv4_address
+        ipv4_address="${ipv4_address:-10.10.10.1/24}"  # Default address if user hits Enter
     fi
 
     # Prompt the user to select an IPv6 address if multiple are available
     if ip addr show | grep -q 'inet6 .* secondary'; then
         echo "Multiple IPv6 addresses are configured."
-        select_ip_address "IPv6"
+        read -p "Choose the IPv6 address to use: " ipv6_address
+        ipv6_address="${ipv6_address:-10.10.10.1/24}"  # Default address if user hits Enter
     fi
+
 # Prompt the user to enter a username
 while true; do
     read -p "Choose a Username: " username
