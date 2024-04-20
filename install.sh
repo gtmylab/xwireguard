@@ -18,6 +18,7 @@ check_package_installed() {
 
 # Clear screen
 clear
+interface=$(ip route list default | awk '$1 == "default" {print $5}')
 
 # Display ASCII art and introduction
 echo "  _|_|_|_|    _|_|_|      _|_|_|    _|_|_|_|    _|_|_|  _|    _|  _|_|_|_|"
@@ -26,7 +27,7 @@ echo "    _|    _|        _|    _|    _|    _|_|      _|_|_|    _|        _|"
 echo "    _|  _|            _|  _|    _|        _|    _|            _|    _|"
 echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
 echo ""
-echo "                                  xWireGuard Management Server"
+echo "                                  xWireGuard Management & Server"
 echo ""
 echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10 & Debian 10 system ONLY\e[0m"
 echo -e "\e[32mRECOMMENDED ==> Ubuntu 20.10 \e[0m"
@@ -119,14 +120,14 @@ done
     wg_address="${wg_address:-10.10.10.1/24,fdf2:de64:f67d:4add::/64}"  # Default address if user hits Enter
 
 # Check if IPv6 is available
-if ip -6 addr show eth0 | grep -q inet6; then
+if ip -6 addr show $interface | grep -q inet6; then
     ipv6_available=true
 else
     ipv6_available=false
 fi
 
 # Retrieve IPv4 addresses and join them with commas
-ipv4_address=$(ip -o -4 addr show eth0 | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
+ipv4_address=$(ip -o -4 addr show $interface | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
 
 # Remove the trailing comma if there are multiple IPv4 addresses
 ipv4_address=${ipv4_address%,}
@@ -135,7 +136,7 @@ ipv4_address=${ipv4_address%,}
 # Display IPv6 addresses if available
 if [ "$ipv6_available" = true ]; then
     # Retrieve IPv6 addresses and join them with commas
-    ipv6_address=$(ip -o -6 addr show eth0 | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
+    ipv6_address=$(ip -o -6 addr show $interface | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
 
     # Remove the trailing comma if there are multiple IPv6 addresses
     ipv6_address=${ipv6_address%,}
@@ -160,7 +161,6 @@ fi
 echo "$hostname" | tee /etc/hostname > /dev/null
 hostnamectl set-hostname "$hostname"
 
-interface=$(ip route list default | awk '$1 == "default" {print $5}')
 
 # Install WireGuard on Debian if detected
 #if [[ "$(lsb_release -si)" == "Debian" ]]; then
@@ -232,21 +232,23 @@ cat <<EOF | tee -a /etc/wireguard/network/iptables.sh
 #!/bin/bash
 
 # Wait for the network interface to be up
-while ! ip link show dev eth0 up; do
+while ! ip link show dev $interface up; do
     sleep 1
 done
 
 # Set iptables rules for WireGuard
-#iptables -t nat -I POSTROUTING -s 10.10.11.0/24 -o eth0 -j SNAT --to $ipv4_address
-iptables -t nat -I POSTROUTING --source 0.0.0.0/0 -o eth0 -j SNAT --to $ipv4_address
-iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+iptables -t nat -I POSTROUTING --source 0.0.0.0/0 -o $interface -j SNAT --to $ipv4_address
+iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 
 # Set ip6tables rules for WireGuard (IPv6)
-ip6tables -t nat -I POSTROUTING --source ::/0 -o eth0 -j SNAT --to $ipv6_address
+ip6tables -t nat -I POSTROUTING --source ::/0 -o $interface -j SNAT --to $ipv6_address
 
-#ip6tables -t nat -I POSTROUTING -s fd6c:f906:e2d2:b959::/64 -o eth0 -j SNAT --to $ipv6_address
-#ip6tables -t nat -I POSTROUTING -o eth0 -j MASQUERADE
-#ip6tables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+# Add custom route for WireGuard interface
+ip route add default dev wg0
+
+# Add custom route for incoming traffic from WireGuard
+ufw route allow in on wg0 out on $interface
+
 EOF
 
 
