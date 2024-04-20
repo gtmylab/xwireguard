@@ -1,23 +1,12 @@
 #!/bin/bash
 
 # Check if the system is Ubuntu 20.10 or Debian 10
-if [[ ! "$(lsb_release -cs)" =~ ^(groovy|focal|buster)$ ]]; then
-    echo -e "\e[1;31mERROR: This installer is only compatible with Ubuntu 20.04, 20.10, and Debian 10.\e[0m"
-    exit 1
-fi
+#if [[ ! "$(lsb_release -cs)" =~ ^(groovy|focal|buster)$ ]]; then
+ #   echo -e "\e[1;31mERROR: This installer is only compatible with Ubuntu 20.04, 20.10, and Debian 10.\e[0m"
+  #  exit 1
+#fi
 
-# Function to install WireGuard on Debian
-#install_wireguard_debian() {
-    # Add the WireGuard repository
- #   echo 'deb http://deb.debian.org/debian buster-backports main contrib non-free' > /etc/apt/sources.list.d/buster-backports.list
-  #  echo "deb http://deb.debian.org/debian/ unstable main" | tee /etc/apt/sources.list.d/unstable-wireguard.list
 
-    # Update the package lists
-   # apt-get update
-
-    # Install WireGuard
-   # apt-get install -y wireguard
-#}
 # Function to check if a package is installed
 check_package_installed() {
     if ! command -v "$1" &> /dev/null; then
@@ -57,8 +46,7 @@ echo ""
 read -p "Would you like to continue [y/n]: " choice
 
 if [[ "$choice" =~ ^[Yy]$ ]]; then
-    # Prompt the user to enter hostname until a valid one is provided
-#read -p "Enter Hostname: " hostname
+# Prompt the user to enter hostname until a valid one is provided
 # Function to validate hostname
 validate_hostname() {
     local hostname="$1"
@@ -82,17 +70,53 @@ validate_hostname() {
         fi
     done
 
+    # Prompt the user to enter a username
+while true; do
+    read -p "Specify a Username Login for WGDashboard: " username
+    if [[ -n "$username" ]]; then
+        break
+    else
+        echo "Username cannot be empty. Please specify a username."
+    fi
+done
+
+while true; do
+    # Prompt the user to enter a password (without showing the input)
+    read -s -p "Specify a Password: " password
+    echo ""
+
+    # Prompt the user to confirm the password
+    read -s -p "Confirm Password: " confirm_password
+    echo ""
+
+    # Check if the passwords match
+    if [ "$password" != "$confirm_password" ]; then
+        echo -e "\e[1;31mError: Passwords do not match. Please try again.\e[0m"
+    elif [ -z "$password" ]; then
+        echo "Password cannot be empty. Please specify a password."
+    else
+        # Hash the password using SHA-256
+        hashed_password=$(echo -n "$password" | sha256sum | awk '{print $1}')
+        break  # Exit the loop if passwords match
+    fi
+done
+
+
    # Prompt for other installation details with default values
     read -p "Please Specify new DNS [eg. 147.78.0.8,172.104.39.79]: " dns
     dns="${dns:-147.78.0.8,172.104.39.79}"  # Default DNS if user hits Enter
+
     read -p "Please enter Wireguard Port [eg. 51820]: " wg_port
     wg_port="${wg_port:-51820}"  # Default port if user hits Enter
+
     read -p "Please enter Admin Dashboard Port [eg. 8080]: " dashboard_port
     dashboard_port="${dashboard_port:-8080}"  # Default port if user hits Enter
+
     read -p "Enter enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
     allowed_ip="${allowed_ip:-0.0.0.0/0,::/0}"  # Default IPs if user hits Enter
-    read -p "Enter WireGuard Private IP Address [eg. 10.10.10.1/24,fdf2:de64:f67d:4add::/64]: " wg_address
-    wg_address="${wg_address:-10.10.10.1/24}"  # Default address if user hits Enter
+
+    read -p "Enter WireGuard Private IP Address(s) [eg. 10.10.10.1/24,fdf2:de64:f67d:4add::/64]: " wg_address
+    wg_address="${wg_address:-10.10.10.1/24,fdf2:de64:f67d:4add::/64}"  # Default address if user hits Enter
 
 # Check if IPv6 is available
 if ip -6 addr show eth0 | grep -q inet6; then
@@ -127,37 +151,6 @@ echo "Selected IPv4 Address: $ipv4_address"
 if [ "$ipv6_available" = true ]; then
     echo "Selected IPv6 Address: $ipv6_address"
 fi
-
-# Prompt the user to enter a username
-while true; do
-    read -p "Specify a Username for WGDashboard: " username
-    if [[ -n "$username" ]]; then
-        break
-    else
-        echo "Username cannot be empty. Please specify a username."
-    fi
-done
-
-while true; do
-    # Prompt the user to enter a password (without showing the input)
-    read -s -p "Specify a Password: " password
-    echo ""
-
-    # Prompt the user to confirm the password
-    read -s -p "Confirm Password: " confirm_password
-    echo ""
-
-    # Check if the passwords match
-    if [ "$password" != "$confirm_password" ]; then
-        echo -e "\e[1;31mError: Passwords do not match. Please try again.\e[0m"
-    elif [ -z "$password" ]; then
-        echo "Password cannot be empty. Please specify a password."
-    else
-        # Hash the password using SHA-256
-        hashed_password=$(echo -n "$password" | sha256sum | awk '{print $1}')
-        break  # Exit the loop if passwords match
-    fi
-done
 
 
     # Continue with the rest of your installation script...
@@ -199,8 +192,7 @@ fi
 private_key=$(wg genkey)
 echo "$private_key" | tee /etc/wireguard/private.key
 public_key=$(echo "$private_key" | wg pubkey)
-#echo "PrivateKey = $private_key" | sudo tee -a /etc/wireguard/wg0.conf
-#echo "PublicKey = $public_key" | sudo tee -a /etc/wireguard/wg0.conf
+
 
 # Enable IPv4 and IPv6 forwarding
 sed -i '/^#net.ipv4.ip_forward=1/s/^#//' /etc/sysctl.conf
@@ -226,17 +218,54 @@ cat <<EOF | tee -a /etc/wireguard/wg0.conf
 Address = $wg_address
 MTU = 1420
 SaveConfig = true
-PostUp = ufw route allow in on wg0 out on $interface
-PostUp = iptables -t nat -I POSTROUTING -o $interface -j MASQUERADE
-PostUp = ip6tables -t nat -I POSTROUTING -o $interface -j MASQUERADE
-PreDown = ufw route delete allow in on wg0 out on $interface
-PreDown = iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
-PreDown = ip6tables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 ListenPort = $wg_port
 PrivateKey = $private_key
 EOF
 
 #sed -i "s|^ListenPort =.*|ListenPort = $wg_port|g" /etc/wireguard/wg0.conf
+
+mkdir /etc/wireguard/network
+
+# Add Wireguard Network configuration
+
+cat <<EOF | tee -a /etc/wireguard/network/iptables.sh
+#!/bin/bash
+
+# Wait for the network interface to be up
+while ! ip link show dev eth0 up; do
+    sleep 1
+done
+
+# Set iptables rules for WireGuard
+#iptables -t nat -I POSTROUTING -s 10.10.11.0/24 -o eth0 -j SNAT --to $ipv4_address
+iptables -t nat -I POSTROUTING --source 0.0.0.0/0 -o eth0 -j SNAT --to $ipv4_address
+iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+# Set ip6tables rules for WireGuard (IPv6)
+ip6tables -t nat -I POSTROUTING --source ::/0 -o eth0 -j SNAT --to $ipv6_address
+
+#ip6tables -t nat -I POSTROUTING -s fd6c:f906:e2d2:b959::/64 -o eth0 -j SNAT --to $ipv6_address
+#ip6tables -t nat -I POSTROUTING -o eth0 -j MASQUERADE
+#ip6tables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+EOF
+
+
+cat <<EOF | tee -a /etc/systemd/system/wireguard-iptables.service
+[Unit]
+Description=Setup iptables rules for WireGuard
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/etc/wireguard/network/iptables.sh
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+chmod +x /etc/wireguard/network/iptables.sh
+
+systemctl enable wireguard-iptables.service
 
 # Enable Wireguard service
 systemctl enable wg-quick@wg0.service
@@ -302,15 +331,6 @@ sed -i "s|^username =.*|username = $username|g" $DASHBOARD_DIR/wg-dashboard.ini
 
 systemctl restart wg-dashboard.service
 
-
-# Check if Wiregaurd service is running
-#systemctl status wg-quick@wg0.service
-
-# Check if WGDashboard service is running
-#systemctl status wg-dashboard.service
-
-# Display success message
-#echo "Installation done successfully!"
 
 # Check if the services restarted successfully
 wg_status=$(systemctl is-active wg-quick@wg0.service)
