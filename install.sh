@@ -238,6 +238,7 @@ fi
 echo "$hostname" | tee /etc/hostname > /dev/null
 hostnamectl set-hostname "$hostname"
 
+apt update
 
 # Check for WireGuard dependencies and install them if not present
 if ! check_dpkg_package_installed wireguard-tools; then
@@ -248,14 +249,12 @@ fi
 # Install git if not installed
 if ! check_package_installed git; then
     echo "Installing git..."
-    apt-get update
     apt-get install -y git
 fi
 
 # Install ufw if not installed
 if ! check_package_installed ufw; then
     echo "Installing ufw..."
-    apt-get update
     apt-get install -y ufw
 fi
 
