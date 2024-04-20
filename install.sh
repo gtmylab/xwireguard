@@ -123,23 +123,23 @@ generate_ipv4() {
     local range_type=$1
     case $range_type in
         1)
-            ip_range="10.$((RANDOM%256)).$((RANDOM%256)).$((RANDOM%256))"
+            ipv4_address_pvt="10.$((RANDOM%256)).$((RANDOM%256)).$((RANDOM%256))/24"
             ;;
         2)
-            ip_range="172.$((RANDOM%16+16)).$((RANDOM%256)).$((RANDOM%256))"
+            ipv4_address_pvt="172.$((RANDOM%16+16)).$((RANDOM%256)).$((RANDOM%256))/24"
             ;;
         3)
-            ip_range="192.168.$((RANDOM%256)).$((RANDOM%256))"
+            ipv4_address_pvt="192.168.$((RANDOM%256)).$((RANDOM%256))/24"
             ;;
         4)
-            read -p "Enter custom IPv4 address: " ip_range
+            read -p "Enter custom Private IPv4 address: " ipv4_address_pvt
             ;;
         *)
             echo "Invalid option for IPv4 range."
             exit 1
             ;;
     esac
-    echo "Generated IPv4 Address: $ip_range/24"
+    echo "$ipv4_address_pvt"  # Return the generated IP address with subnet
 }
 
 # Function to generate IPv6 addresses
@@ -147,20 +147,20 @@ generate_ipv6() {
     local range_type=$1
     case $range_type in
         1)
-            ip_range="FC00::$(printf '%02x%02x:%02x%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))"
+            ipv6_address_pvt="FC00::$(printf '%02x%02x:%02x%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256))))/64"
             ;;
         2)
-            ip_range="FD00::$(printf '%02x%02x:%02x%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))"
+            ipv6_address_pvt="FD00::$(printf '%02x%02x:%02x%02x' $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256))))/64"
             ;;
         3)
-            read -p "Enter custom IPv6 address: " ip_range
+            read -p "Enter custom Private IPv6 address: " ipv6_address_pvt
             ;;
         *)
             echo "Invalid option for IPv6 range."
             exit 1
             ;;
     esac
-    echo "Generated IPv6 Address: $ip_range/64"
+    echo "$ipv6_address_pvt"  # Return the generated IP address with subnet
 }
 
 # Main script
@@ -169,18 +169,18 @@ echo "Choose IP range type for IPv4:"
 echo "1) Class A: 10.0.0.0 to 10.255.255.255"
 echo "2) Class B: 172.16.0.0 to 172.31.255.255"
 echo "3) Class C: 192.168.0.0 to 192.168.255.255"
-echo "4) Specify custom IPv4"
+echo "4) Specify custom Private IPv4"
 read -p "Enter your choice (1-4): " ipv4_option
 
 echo "Choose IP range type for IPv6:"
 echo "1) FC00::/7"
 echo "2) FD00::/7"
-echo "3) Specify custom IPv6"
+echo "3) Specify custom Private IPv6"
 read -p "Enter your choice (1-3): " ipv6_option
 
 case $ipv4_option in
     1|2|3|4)
-        generate_ipv4 $ipv4_option
+        ipv4_address_pvt=$(generate_ipv4 $ipv4_option)
         ;;
     *)
         echo "Invalid option for IPv4 range."
@@ -189,7 +189,7 @@ esac
 
 case $ipv6_option in
     1|2|3)
-        generate_ipv6 $ipv6_option
+        ipv6_address_pvt=$(generate_ipv6 $ipv6_option)
         ;;
     *)
         echo "Invalid option for IPv6 range."
@@ -289,7 +289,7 @@ ufw --force enable
 # Add Wireguard configuration
 cat <<EOF | tee -a /etc/wireguard/wg0.conf
 [Interface]
-Address = $ipv4_option,$ipv6_option
+Address = $ipv4_address_pvt,$ipv6_address_pvt
 MTU = 1420
 SaveConfig = true
 ListenPort = $wg_port
