@@ -8,6 +8,9 @@ check_package_installed() {
         return 0
     fi
 }
+check_dpkg_package_installed() {
+    dpkg -s "$1" >/dev/null 2>&1
+}
 
 # Clear screen
 clear
@@ -155,12 +158,11 @@ echo "$hostname" | tee /etc/hostname > /dev/null
 hostnamectl set-hostname "$hostname"
 
 
-# Update package list
-apt update
-
-# Install Wireguard 
-apt install wireguard -y
-#apt install -y --fix-broken wireguard
+# Check for WireGuard dependencies and install them if not present
+if ! check_dpkg_package_installed wireguard-tools; then
+    echo "Installing WireGuard dependencies..."
+    apt install -y wireguard-tools
+fi
 
 # Install git if not installed
 if ! check_package_installed git; then
@@ -175,6 +177,10 @@ if ! check_package_installed ufw; then
     apt-get update
     apt-get install -y ufw
 fi
+
+# Now that dependencies are ensured to be installed, install WireGuard
+echo "Installing WireGuard..."
+apt install -y wireguard
 
 # Generate Wireguard keys
 private_key=$(wg genkey)
@@ -320,6 +326,7 @@ sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" $DASHBOARD_DIR/wg-dashb
 sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" $DASHBOARD_DIR/wg-dashboard.ini
 sed -i "s|^password =.*|password = $hashed_password|g" $DASHBOARD_DIR/wg-dashboard.ini
 sed -i "s|^username =.*|username = $username|g" $DASHBOARD_DIR/wg-dashboard.ini
+sed -i "s|^dashboard_theme =.*|dashboard_theme = dark|g" $DASHBOARD_DIR/wg-dashboard.ini
 
 
 systemctl restart wg-dashboard.service
