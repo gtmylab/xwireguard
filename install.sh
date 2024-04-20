@@ -261,6 +261,7 @@ systemctl enable wireguard-iptables.service
 systemctl enable wg-quick@wg0.service
 systemctl start wg-quick@wg0.service
 
+
 # Change directory to /etc
 cd /etc || exit
 
@@ -310,6 +311,8 @@ systemctl daemon-reload
 # Enable and start WGDashboard service
 systemctl enable wg-dashboard.service
 systemctl restart wg-dashboard.service
+systemctl restart wireguard-iptables.service
+
 
 # Seed to wg-dashboard.ini
 sed -i "s|^app_port =.*|app_port = $dashboard_port|g" $DASHBOARD_DIR/wg-dashboard.ini
@@ -340,10 +343,10 @@ if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     echo "Username: $username"
     echo "Password: ***(hidden)***"
     echo ""
-    echo "A system REBOOT will be triggered after that. Go ahead and create your first peers and don't forget to change your password."
+    echo "Go ahead and create your first peers and don't forget to change your password."
     echo -e "\e[0m" # Reset font color
 
-    reboot
+    #reboot
 else
     echo "Error: Installation failed. Please check the services and try again."
 fi
