@@ -499,7 +499,8 @@ cd xwireguard || exit
 # Install WGDashboard
 git clone -b v3.1-dev https://github.com/donaldzou/WGDashboard.git wgdashboard
 cd wgdashboard/src
-apt install python3-pip -y && pip install gunicorn && pip install -r requirements.txt --ignore-installed
+#apt install python3-pip -y && pip install gunicorn && pip install -r requirements.txt --ignore-installed
+apt install python3-pip -y >/dev/null 2>&1 && pip install gunicorn >/dev/null 2>&1 && pip install -r requirements.txt --ignore-installed >/dev/null 2>&1
 chmod u+x wgd.sh
 ./wgd.sh install
 
