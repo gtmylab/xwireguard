@@ -12,7 +12,19 @@ check_dpkg_package_installed() {
     dpkg -s "$1" >/dev/null 2>&1
 }
 
+# Check if curl is installed
+if ! check_dpkg_package_installed curl; then
+    echo "Installing curl..."
+    apt update
+    apt install -y curl
+fi
 
+# Check if wget is installed
+if ! check_dpkg_package_installed wget; then
+    echo "Installing wget..."
+    apt update
+    apt install -y wget
+fi
 
 # Clear screen
 clear
