@@ -484,12 +484,16 @@ ufw allow 53/udp
 ufw allow OpenSSH
 ufw --force enable
 
-
+if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
+WG_Address="$ipv4_address_pvt"
+else
+WG_Address="$ipv4_address_pvt,$ipv6_address_pvt"
+fi
 
 # Add Wireguard configuration
 cat <<EOF | tee -a /etc/wireguard/wg0.conf
 [Interface]
-Address = $ipv4_address_pvt,$ipv6_address_pvt
+Address = $WG_Address
 MTU = 1420
 SaveConfig = true
 ListenPort = $wg_port
