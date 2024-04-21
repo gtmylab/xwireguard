@@ -614,7 +614,6 @@ systemctl daemon-reload
 # Enable and start WGDashboard service
 systemctl enable wg-dashboard.service
 systemctl restart wg-dashboard.service
-systemctl restart wireguard-iptables.service
 
 
 # Seed to wg-dashboard.ini
@@ -647,10 +646,11 @@ if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     echo "Username: $username"
     echo "Password: ***(hidden)***"
     echo ""
-    echo "Go ahead and create your first peers and don't forget to change your password."
+    echo "Reboot system after that Go ahead and create your first peers and don't forget to change your password."
     echo -e "\e[0m" # Reset font color
 
     #reboot
+    systemctl restart wireguard-iptables.service
 else
     echo "Error: Installation failed. Please check the services and try again."
 fi
