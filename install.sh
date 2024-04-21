@@ -143,7 +143,7 @@ convert_ipv4_format() {
     local network=$(echo "$ipv4_address" | cut -d'/' -f1 | cut -d'.' -f1-3)
 
     # Append ".0" to the network portion and concatenate with the subnet mask
-    local converted_ipv4="$network.0/$subnet_mask"
+    local converted_ipv4="$network.0/24"
 
     echo "$converted_ipv4"
 }
@@ -437,7 +437,7 @@ iptables -t nat -I POSTROUTING --source $ipv4_address_pvt0 -o $interface -j SNAT
 iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 
 # Set ip6tables rules for WireGuard (IPv6)
-ip6tables -t nat -I POSTROUTING --source $ipv6_address_pvt -o $interface -j SNAT --to $ipv6_address
+ip6tables -t nat -I POSTROUTING --source ::/0 -o $interface -j SNAT --to $ipv6_address
 
 # Add custom route for WireGuard interface
 ip route add default dev wg0
