@@ -27,7 +27,7 @@ echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
 echo ""
 echo "                                  xWireGuard Management & Server"
 echo ""
-echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10 & Debian 10 system ONLY\e[0m"
+echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10, Ubuntu 22.04, Ubuntu 23.10 & Debian 10 system ONLY\e[0m"
 echo -e "\e[32mRECOMMENDED ==> Ubuntu 20.10 \e[0m"
 echo ""
 echo "The following software will be installed on your system:"
@@ -363,11 +363,25 @@ hostnamectl set-hostname "$hostname"
 
 apt update
 
+
+# Check if Python 3 is installed
+if ! check_dpkg_package_installed python3; then
+    echo "Python 3 is not installed. Installing Python 3..."
+
+    # Install Python 3 system-wide
+    apt install -y python3
+
+    # Make Python 3 the default version
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+fi
+
+
 # Check for WireGuard dependencies and install them if not present
 if ! check_dpkg_package_installed wireguard-tools; then
     echo "Installing WireGuard dependencies..."
     apt install -y wireguard-tools
 fi
+
 
 # Install git if not installed
 if ! check_package_installed git; then
