@@ -456,7 +456,9 @@ mkdir /etc/wireguard/network
 
 # Add Wireguard Network configuration
 ipv4_address_pvt0=$(convert_ipv4_format "$ipv4_address_pvt")
-cat <<EOF | tee -a /etc/wireguard/network/iptables.sh
+# Define the path to the iptables.sh script
+iptables_script="/etc/wireguard/network/iptables.sh"
+cat <<EOF | tee -a "$iptables_script"
 #!/bin/bash
 
 # Wait for the network interface to be up
@@ -469,7 +471,7 @@ iptables -t nat -I POSTROUTING --source $ipv4_address_pvt0 -o $interface -j SNAT
 iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 
 # Set ip6tables rules for WireGuard (IPv6)
-ip6tables -t nat -I POSTROUTING --source $ipv6_address_pvt -o $interface -j SNAT --to $ipv6_address
+#ip6tables -t nat -I POSTROUTING --source ::/0 -o $interface -j SNAT --to $ipv6_address
 
 # Add custom route for WireGuard interface
 ip route add default dev wg0
@@ -487,13 +489,21 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/etc/wireguard/network/iptables.sh
+ExecStart=$iptables_script
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-chmod +x /etc/wireguard/network/iptables.sh
+chmod +x $iptables_script
+
+
+# Uncomment the ip6tables command if IPv6 is available
+if $ipv6_available && grep -q "#ip6tables" "$iptables_script"; then
+    sed -i 's/#ip6tables/ip6tables/' "$iptables_script"
+    sed -i "s/::\/0/$ipv6_address_pvt/" "$iptables_script"
+    echo "Uncommented ip6tables command in $iptables_script"
+fi
 
 systemctl enable wireguard-iptables.service
 
