@@ -27,7 +27,7 @@ echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
 echo ""
 echo "                                  xWireGuard Management & Server"
 echo ""
-echo -e "\e[1;31mWARNING ! Install only in Ubuntu 18.04 LTS, Ubuntu 20.10, Ubuntu 22.04 & Debian 10 system ONLY\e[0m"
+echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10, Ubuntu 22.04 & Debian 11 system ONLY\e[0m"
 echo -e "\e[32mRECOMMENDED ==> Ubuntu 20.10 \e[0m"
 echo ""
 echo "The following software will be installed on your system:"
@@ -517,7 +517,42 @@ cd xwireguard || exit
 git clone -b v3.1-dev https://github.com/donaldzou/WGDashboard.git wgdashboard
 cd wgdashboard/src
 #apt install python3-pip -y && pip install gunicorn && pip install -r requirements.txt --ignore-installed
+#apt install python3-pip -y >/dev/null 2>&1 && pip install gunicorn >/dev/null 2>&1 && pip install -r requirements.txt --ignore-installed >/dev/null 2>&1
+#!/bin/bash
+
+# Function to disable service restarts
+disable_service_restart() {
+    systemctl mask "$1" >/dev/null 2>&1
+}
+
+# Disable automatic restart for all services
+services=$(systemctl list-unit-files --type=service --no-legend | awk '{print $1}')
+for service in $services; do
+    disable_service_restart "$service"
+done
+
+# Check Python version and upgrade if necessary
+get_python_version() {
+    python3 --version | awk '{print $2}'
+}
+
+python_version=$(get_python_version)
+if [[ "$(echo "$python_version" | cut -d. -f1)" -lt 3 || "$(echo "$python_version" | cut -d. -f2)" -lt 7 ]]; then
+    echo "Python version is below 3.7. Upgrading Python..."
+    apt update
+    apt install -y python3
+else
+    echo "Python version is 3.7 or above."
+fi
+
+# Install Python packages
 apt install python3-pip -y >/dev/null 2>&1 && pip install gunicorn >/dev/null 2>&1 && pip install -r requirements.txt --ignore-installed >/dev/null 2>&1
+
+# Re-enable automatic restart for all services
+for service in $services; do
+    systemctl unmask "$service" >/dev/null 2>&1
+done
+
 chmod u+x wgd.sh
 ./wgd.sh install
 
