@@ -139,12 +139,46 @@ fi
 
 # Function to check if IPv6 is available
 ipv6_available() {
-    if ip -6 addr show $interface | grep -q inet6 && ip -6 addr show $interface | grep -qv fe80; then
+if ip -6 addr show $interface | grep -q inet6 && ip -6 addr show $interface | grep -qv fe80; then
         return 0
     else
         return 1
     fi
 }
+
+# Function to convert IPv4 address format
+convert_ipv4_format() {
+    local ipv4_address=$1
+    local subnet_mask=$2
+
+    # Extract the network portion of the IPv4 address
+    local network=$(echo "$ipv4_address" | cut -d'/' -f1 | cut -d'.' -f1-3)
+
+    # Append ".0" to the network portion and concatenate with the subnet mask
+    local converted_ipv4="$network.0/24"
+
+    echo "$converted_ipv4"
+}
+
+#!/bin/bash
+
+# Function to check if an IPv6 address is global
+is_global_ipv6() {
+    local ipv6_address=$1
+    # Check if the address is not link-local (starts with fe80) and contains '::'
+    if [[ $ipv6_address != fe80:* && $ipv6_address == *::* ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Check if IPv6 is available on the default interface
+ipv6_available=false
+default_interface=$(ip route list default | awk '$1 == "default" {print $5}')
+if ip -6 addr show $default_interface | grep -q inet6 && ip -6 addr show $default_interface | grep -v fe80 | grep -q "::"; then
+    ipv6_available=true
+fi
 
 # Function to convert IPv4 address format
 convert_ipv4_format() {
@@ -239,7 +273,7 @@ while true; do
 done
 
 ipv6_option=""
-if ipv6_available; then
+if $ipv6_available; then
     while true; do
         echo "Choose IP range type for IPv6:"
         echo "1) FC00::/7"
@@ -258,12 +292,12 @@ if ipv6_available; then
         esac
     done
 fi
-
 echo "IPv4 Address: $ipv4_address_pvt"
 if [ -n "$ipv6_address_pvt" ]; then
     echo "IPv6 Address: $ipv6_address_pvt"
 fi
 echo ""
+
 
 read -p "Specify a Peer Endpoint Allowed IPs OR [press enter to use - 0.0.0.0/0,::/0]: " allowed_ip
 allowed_ip="${allowed_ip:-0.0.0.0/0,::/0}"  # Default IPs if user hits Enter
