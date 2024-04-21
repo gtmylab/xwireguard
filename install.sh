@@ -27,7 +27,7 @@ echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
 echo ""
 echo "                                  xWireGuard Management & Server"
 echo ""
-echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10, Ubuntu 22.04, Ubuntu 23.10 & Debian 10 system ONLY\e[0m"
+echo -e "\e[1;31mWARNING ! Install only in Ubuntu 18.04 LTS, Ubuntu 20.10, Ubuntu 22.04 & Debian 10 system ONLY\e[0m"
 echo -e "\e[32mRECOMMENDED ==> Ubuntu 20.10 \e[0m"
 echo ""
 echo "The following software will be installed on your system:"
@@ -375,6 +375,23 @@ if ! check_dpkg_package_installed python3; then
     update-alternatives --install /usr/bin/python python /usr/bin/python3 1
 fi
 
+# Function to check the version of Python installed
+get_python_version() {
+    python3 --version | awk '{print $2}'
+}
+
+# Check the Python version
+python_version=$(get_python_version)
+
+# Compare the Python version
+if [[ "$(echo "$python_version" | cut -d. -f1)" -lt 3 || "$(echo "$python_version" | cut -d. -f2)" -lt 7 ]]; then
+    echo "Python version is below 3.7. Upgrading Python..."
+    # Perform the system upgrade of Python
+    apt update
+    apt install -y python3
+else
+    echo "Python version is 3.7 or above."
+fi
 
 # Check for WireGuard dependencies and install them if not present
 if ! check_dpkg_package_installed wireguard-tools; then
