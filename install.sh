@@ -511,7 +511,8 @@ chmod +x $iptables_script
 
 
 # Uncomment the ip6tables command if IPv6 is available
-if $ipv6_available && grep -q "#ip6tables" "$iptables_script"; then
+#if $ipv6_address && grep -q "#ip6tables" "$iptables_script"; then
+if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
     sed -i 's/#ip6tables/ip6tables/' "$iptables_script"
     sed -i "s|::/0|$ipv6_address_pvt|" "$iptables_script"
     echo "Uncommented ip6tables command in $iptables_script"
