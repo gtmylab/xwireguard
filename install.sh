@@ -489,7 +489,7 @@ ufw --force enable
 if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
 WG_Address="$ipv4_address_pvt"
 else
-WG_Address="$ipv4_address_pvt,$ipv6_address_pvt"
+WG_Address="$ipv6_address_pvt,$ipv4_address_pvt"
 fi
 
 # Add Wireguard configuration
