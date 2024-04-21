@@ -438,7 +438,7 @@ iptables -t nat -I POSTROUTING --source $ipv4_address_pvt0 -o $interface -j SNAT
 iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 
 # Set ip6tables rules for WireGuard (IPv6)
-ip6tables -t nat -I POSTROUTING --source ::/0 -o $interface -j SNAT --to $ipv6_address
+ip6tables -t nat -I POSTROUTING --source $ipv6_address_pvt -o $interface -j SNAT --to $ipv6_address
 
 # Add custom route for WireGuard interface
 ip route add default dev wg0
