@@ -571,7 +571,7 @@ cp "$SERVICE_FILE" /etc/systemd/system/wg-dashboard.service
 chmod 664 /etc/systemd/system/wg-dashboard.service
 
 # Reload systemd daemon
-#systemctl daemon-reload
+systemctl daemon-reload
 
 # Enable and start WGDashboard service
 systemctl enable wg-dashboard.service
