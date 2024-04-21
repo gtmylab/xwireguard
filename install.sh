@@ -134,19 +134,32 @@ ipv6_available() {
     fi
 }
 
+# Function to convert IPv4 address format
+convert_ipv4_format() {
+    local ipv4_address=$1
+    local subnet_mask=$2
+
+    # Extract the network portion of the IPv4 address
+    local network=$(echo "$ipv4_address" | cut -d'/' -f1 | cut -d'.' -f1-3)
+
+    # Append ".0" to the network portion and concatenate with the subnet mask
+    local converted_ipv4="$network.0/$subnet_mask"
+
+    echo "$converted_ipv4"
+}
 
 # Function to generate IPv4 addresses
 generate_ipv4() {
     local range_type=$1
     case $range_type in
-        1)
-            ipv4_address_pvt="10.$((RANDOM%256)).$((RANDOM%256)).$((RANDOM%256))/24"
+       1)
+            ipv4_address_pvt="10.$((RANDOM%256)).$((RANDOM%256)).1/24"
             ;;
         2)
-            ipv4_address_pvt="172.$((RANDOM%16+16)).$((RANDOM%256)).$((RANDOM%256))/24"
+            ipv4_address_pvt="172.$((RANDOM%16+16)).$((RANDOM%256)).1/24"
             ;;
         3)
-            ipv4_address_pvt="192.168.$((RANDOM%256)).$((RANDOM%256))/24"
+            ipv4_address_pvt="192.168.$((RANDOM%256)).1/24"
             ;;
         4)
             read -p "Enter custom Private IPv4 address: " ipv4_address_pvt
@@ -410,7 +423,7 @@ EOF
 mkdir /etc/wireguard/network
 
 # Add Wireguard Network configuration
-
+ipv4_address_pvt0=$(convert_ipv4_format "$ipv4_address_pvt")
 cat <<EOF | tee -a /etc/wireguard/network/iptables.sh
 #!/bin/bash
 
@@ -420,7 +433,7 @@ while ! ip link show dev $interface up; do
 done
 
 # Set iptables rules for WireGuard
-iptables -t nat -I POSTROUTING --source $ipv4_address_pvt -o $interface -j SNAT --to $ipv4_address
+iptables -t nat -I POSTROUTING --source $ipv4_address_pvt0 -o $interface -j SNAT --to $ipv4_address
 iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 
 # Set ip6tables rules for WireGuard (IPv6)
