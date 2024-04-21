@@ -33,7 +33,7 @@ echo ""
 echo "The following software will be installed on your system:"
 echo "   - Wire Guard Server"
 echo "   - WireGuard-Tools"
-echo "   - WGDashboard by donaldzou"
+echo "   - WGDashboard by donaldzou (v3.1-dev)"
 echo "   - Gunicorn WSGI Server"
 echo "   - Python3-pip"
 echo "   - Git"
@@ -116,6 +116,25 @@ done
  #   wg_address="${wg_address:-10.10.10.1/24,fdf2:de64:f67d:4add::/64}"  # Default address if user hits Enter
 echo ""
 
+
+# Check if IPv6 is available
+#if ip -6 addr show $interface | grep -q inet6; then
+if ip -6 addr show $interface | grep -q inet6 && ip -6 addr show $interface | grep -qv fe80; then
+    ipv6_available=true
+else
+    ipv6_available=false
+fi
+
+# Function to check if IPv6 is available
+ipv6_available() {
+    if ip -6 addr show $interface | grep -q inet6 && ip -6 addr show $interface | grep -qv fe80; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+
 # Function to generate IPv4 addresses
 generate_ipv4() {
     local range_type=$1
@@ -161,76 +180,162 @@ generate_ipv6() {
     echo "$ipv6_address_pvt"  # Return the generated IP address with subnet
 }
 
+# Function to validate user input within a range
+validate_input() {
+    local input=$1
+    local min=$2
+    local max=$3
+    if (( input < min || input > max )); then
+        echo "Invalid option. Please choose an option between $min and $max."
+        return 1
+    fi
+    return 0
+}
+
 # Main script
 
-echo "Choose IP range type for IPv4:"
-echo "1) Class A: 10.0.0.0 to 10.255.255.255"
-echo "2) Class B: 172.16.0.0 to 172.31.255.255"
-echo "3) Class C: 192.168.0.0 to 192.168.255.255"
-echo "4) Specify custom Private IPv4"
-read -p "Enter your choice (1-4): " ipv4_option
+while true; do
+    echo "Choose IP range type for IPv4:"
+    echo "1) Class A: 10.0.0.0 to 10.255.255.255"
+    echo "2) Class B: 172.16.0.0 to 172.31.255.255"
+    echo "3) Class C: 192.168.0.0 to 192.168.255.255"
+    echo "4) Specify custom Private IPv4"
+    read -p "Enter your choice (1-4): " ipv4_option
 
-echo "Choose IP range type for IPv6:"
-echo "1) FC00::/7"
-echo "2) FD00::/7"
-echo "3) Specify custom Private IPv6"
-read -p "Enter your choice (1-3): " ipv6_option
+    case $ipv4_option in
+        1|2|3|4)
+            ipv4_address_pvt=$(generate_ipv4 $ipv4_option)
+            break
+            ;;
+        *)
+            echo "Invalid option for IPv4 range."
+            ;;
+    esac
+done
 
-case $ipv4_option in
-    1|2|3|4)
-        ipv4_address_pvt=$(generate_ipv4 $ipv4_option)
-        ;;
-    *)
-        echo "Invalid option for IPv4 range."
-        ;;
-esac
+ipv6_option=""
+if ipv6_available; then
+    while true; do
+        echo "Choose IP range type for IPv6:"
+        echo "1) FC00::/7"
+        echo "2) FD00::/7"
+        echo "3) Specify custom Private IPv6"
+        read -p "Enter your choice (1-3): " ipv6_option
 
-case $ipv6_option in
-    1|2|3)
-        ipv6_address_pvt=$(generate_ipv6 $ipv6_option)
-        ;;
-    *)
-        echo "Invalid option for IPv6 range."
-        ;;
-esac
+        case $ipv6_option in
+            1|2|3)
+                ipv6_address_pvt=$(generate_ipv6 $ipv6_option)
+                break
+                ;;
+            *)
+                echo "Invalid option for IPv6 range."
+                ;;
+        esac
+    done
+fi
+
+echo "IPv4 Address: $ipv4_address_pvt"
+if [ -n "$ipv6_address_pvt" ]; then
+    echo "IPv6 Address: $ipv6_address_pvt"
+fi
 echo ""
 
-read -p "Enter enter Peer Endpoint Allowed IPs [eg. 0.0.0.0/0,::/0]: " allowed_ip
+read -p "Specify a Peer Endpoint Allowed IPs OR [press enter to use - 0.0.0.0/0,::/0]: " allowed_ip
 allowed_ip="${allowed_ip:-0.0.0.0/0,::/0}"  # Default IPs if user hits Enter
 
+
+echo ""
+
+# Function to retrieve IPv4 addresses (excluding loopback address)
+get_ipv4_addresses() {
+    ip -o -4 addr show $interface | awk '$4 !~ /^127\.0\.0\.1/ {print $4}' | cut -d'/' -f1
+}
+
+# Function to retrieve IPv6 addresses (excluding link-local and loopback addresses)
+get_ipv6_addresses() {
+    ip -o -6 addr show $interface | awk '$4 !~ /^fe80:/ && $4 !~ /^::1/ {print $4}' | cut -d'/' -f1
+}
+
+# Function to validate user input within a range
+validate_input() {
+    local input=$1
+    local min=$2
+    local max=$3
+    if (( input < min || input > max )); then
+        echo "Invalid option. Please choose an option between $min and $max."
+        return 1
+    fi
+    return 0
+}
+
+# Main script
+
+# Prompt for interface name
+read -p "Enter the internet interface OR (press Enter for detected: $interface)" interface
+interface="${interface:-$interface}"  # Default IPs if user hits Enter
+echo ""
+
 # Check if IPv6 is available
-if ip -6 addr show $interface | grep -q inet6; then
+if ipv6_available; then
     ipv6_available=true
 else
     ipv6_available=false
 fi
 
-# Retrieve IPv4 addresses and join them with commas
-ipv4_address=$(ip -o -4 addr show $interface | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
-
-# Remove the trailing comma if there are multiple IPv4 addresses
-ipv4_address=${ipv4_address%,}
-
-
-# Display IPv6 addresses if available
+# Prompt for IP version selection 
+#PS3="Choose IP version: "
+PS3="Select an option: "
+options=("IPv4")
 if [ "$ipv6_available" = true ]; then
-    # Retrieve IPv6 addresses and join them with commas
-    ipv6_address=$(ip -o -6 addr show $interface | awk '{print $4}' | cut -d'/' -f1 | tr '\n' ',')
-
-    # Remove the trailing comma if there are multiple IPv6 addresses
-    ipv6_address=${ipv6_address%,}
-
-    read -p "Enter the Ipv6 to use [$ipv6_address]: " chosen_ipv6
-    ipv6_address="${chosen_ipv6:-$ipv6_address}"  # Default address if user hits Enter
+    options+=("IPv6")
 fi
+select opt in "${options[@]}"; do
+    case $REPLY in
+        1)
+            # Display IPv4 addresses as options
+            echo "Available IPv4 addresses:"
+            ipv4_addresses=$(get_ipv4_addresses)
+            select ipv4_address in $ipv4_addresses; do
+                if validate_input $REPLY 1 $(wc -w <<< "$ipv4_addresses"); then
+                    break
+                fi
+            done
+            echo "Selected IPv4 Address: $ipv4_address"
 
-read -p "Enter the Public IPv4 to use [$ipv4_address]: " chosen_ipv4
-ipv4_address="${chosen_ipv4:-$ipv4_address}"  # Default address if user hits Enter
-
-echo "Selected IPv4 Address: $ipv4_address"
-if [ "$ipv6_available" = true ]; then
-    echo "Selected IPv6 Address: $ipv6_address"
-fi
+            # If IPv6 is available, present options to choose an IPv6 address
+            if [ "$ipv6_available" = true ]; then
+                echo "Choose an IPv6 address:"
+                ipv6_addresses=$(get_ipv6_addresses)
+                select ipv6_address in $ipv6_addresses; do
+                    if validate_input $REPLY 1 $(wc -w <<< "$ipv6_addresses"); then
+                        break
+                    fi
+                done
+                echo "Selected IPv6 Address: $ipv6_address"
+            fi
+            break
+            ;;
+        2)
+            if [ "$ipv6_available" = true ]; then
+                # Display IPv6 addresses as options
+                echo "Available IPv6 addresses (excluding link-local addresses):"
+                ipv6_addresses=$(get_ipv6_addresses)
+                select ipv6_address in $ipv6_addresses; do
+                    if validate_input $REPLY 1 $(wc -w <<< "$ipv6_addresses"); then
+                        break
+                    fi
+                done
+                echo "Selected IPv6 Address: $ipv6_address"
+            else
+                echo "IPv6 is not available."
+            fi
+            break
+            ;;
+        *)
+            echo "Invalid option. Please select again."
+            ;;
+    esac
+done
 
 echo ""
 
@@ -315,11 +420,11 @@ while ! ip link show dev $interface up; do
 done
 
 # Set iptables rules for WireGuard
-iptables -t nat -I POSTROUTING --source 0.0.0.0/0 -o $interface -j SNAT --to $ipv4_address
+iptables -t nat -I POSTROUTING --source $ipv4_address_pvt -o $interface -j SNAT --to $ipv4_address
 iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 
 # Set ip6tables rules for WireGuard (IPv6)
-ip6tables -t nat -I POSTROUTING --source ::/0 -o $interface -j SNAT --to $ipv6_address
+ip6tables -t nat -I POSTROUTING --source $ipv6_address_pvt -o $interface -j SNAT --to $ipv6_address
 
 # Add custom route for WireGuard interface
 ip route add default dev wg0
