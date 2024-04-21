@@ -474,10 +474,12 @@ sed -i '/^#net.ipv6.conf.all.forwarding=1/s/^#//' /etc/sysctl.conf
 
 # Apply changes
 sysctl -p
+ssh_port=$(ss -tlnp | grep 'sshd' | awk '{print $4}' | awk -F ':' '{print $NF}' | sort -u)
 
 # Configure firewall (UFW)
 ufw disable
 ufw allow 10086/tcp
+ufw allow $ssh_port/tcp
 ufw allow $dashboard_port/tcp
 ufw allow $wg_port/udp
 ufw allow 53/udp
