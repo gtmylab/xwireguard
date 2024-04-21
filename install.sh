@@ -284,8 +284,9 @@ validate_input() {
 # Main script
 
 # Prompt for interface name
-read -p "Enter the internet interface OR (press Enter for detected: $interface)" interface
-interface="${interface:-$interface}"  # Default IPs if user hits Enter
+read -p "Enter the internet interface OR (press Enter for detected: $interface)" net_interface
+#read -p "Enter the internet interface (detected is: $interface)" interface
+interface="${net_interface:-$interface}"  # Default IPs if user hits Enter
 echo ""
 
 # Check if IPv6 is available
