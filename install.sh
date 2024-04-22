@@ -650,8 +650,7 @@ cp "$SERVICE_FILE" /etc/systemd/system/wg-dashboard.service
 chmod 664 /etc/systemd/system/wg-dashboard.service
 
 
-
-cat <<EOF | tee -a /etc/xwireguard/monitor/wg.sh >/dev/null
+cat <<'EOF_SCRIPT' | tee -a /etc/xwireguard/monitor/wg.sh >/dev/null
 #!/bin/bash
 
 # Define the path to the WireGuard config file
@@ -684,7 +683,8 @@ while true; do
     combine_addresses
     echo "WireGuard config file modified"
 done
-EOF
+EOF_SCRIPT
+
 
 cat <<EOF | tee -a /etc/systemd/system/wgmonitor.service >/dev/null
 [Unit]
@@ -748,7 +748,7 @@ if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     echo "Username: $username"
     echo "Password: ***(hidden)***"
     echo ""
-    echo "System will reboot now and after that Go ahead and create your first peers/vpn users"
+    echo "System will reboot now and after that Go ahead and create your first peers"
     echo -e "\e[0m" # Reset font color
 
 # Reload systemd daemon
