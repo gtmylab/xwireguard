@@ -413,7 +413,7 @@ select opt in "${options[@]}"; do
 done
 
 echo ""
-
+clear
     # Continue with the rest of your installation script...
     echo "Starting with installation..."
     echo ""
@@ -487,9 +487,9 @@ echo "Installing WireGuard..."
 apt install -y wireguard >/dev/null 2>&1
 
 # Generate Wireguard keys
-private_key=$(wg genkey)
-echo "$private_key" | tee /etc/wireguard/private.key
-public_key=$(echo "$private_key" | wg pubkey)
+private_key=$(wg genkey 2>/dev/null)
+echo "$private_key" | tee /etc/wireguard/private.key >/dev/null
+public_key=$(echo "$private_key" | wg pubkey 2>/dev/null)
 
 
 # Enable IPv4 and IPv6 forwarding
@@ -497,18 +497,19 @@ sed -i '/^#net.ipv4.ip_forward=1/s/^#//' /etc/sysctl.conf >/dev/null
 sed -i '/^#net.ipv6.conf.all.forwarding=1/s/^#//' /etc/sysctl.conf >/dev/null
 
 # Apply changes
-sysctl -p
+sysctl -p >/dev/null
 ssh_port=$(ss -tlnp | grep 'sshd' | awk '{print $4}' | awk -F ':' '{print $NF}' | sort -u)
 
-echo "Configuring firewall (UFW) rules ....."
+echo "Configuring firewall (UFW) ....."
 # Configure firewall (UFW)
-ufw disable
-ufw allow 10086/tcp
-ufw allow $ssh_port/tcp
-ufw allow $dashboard_port/tcp
-ufw allow $wg_port/udp
-ufw allow 53/udp
-ufw allow OpenSSH
+ufw disable --quiet
+echo "Creating firewall rules ....."
+ufw allow 10086/tcp --quiet
+ufw allow $ssh_port/tcp --quiet
+ufw allow $dashboard_port/tcp --quiet
+ufw allow $wg_port/udp --quiet
+ufw allow 53/udp --quiet
+ufw allow OpenSSH --quiet
 ufw --force enable
 
 if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
@@ -582,10 +583,10 @@ chmod +x $iptables_script
 if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
     sed -i 's/#ip6tables/ip6tables/' "$iptables_script" >/dev/null
     sed -i "s|::/0|$ipv6_address_pvt|" "$iptables_script" >/dev/null
-    echo "Uncommented ip6tables command in $iptables_script"
+    #echo "Uncommented ip6tables command in $iptables_script"
 fi
 
-systemctl enable wireguard-iptables.service
+systemctl enable wireguard-iptables.service --quiet
 
 # Enable Wireguard service
 echo "Enabling Wireguard Service ....."
@@ -613,13 +614,13 @@ cd wgdashboard/src
 apt install python3-pip -y >/dev/null 2>&1 && pip install gunicorn >/dev/null 2>&1 && pip install -r requirements.txt --ignore-installed >/dev/null 2>&1
 
 chmod u+x wgd.sh
-./wgd.sh install
+./wgd.sh install >/dev/null 2>&1
 
 # Set permissions
 chmod -R 755 /etc/wireguard
 
 # Start WGDashboard
-./wgd.sh start
+./wgd.sh start >/dev/null 2>&1
 
 
 # Autostart WGDashboard on boot
@@ -695,11 +696,11 @@ sudo chmod +x /etc/xwireguard/monitor/wg.sh
 
 
 # Enable and start WGDashboard service
-systemctl enable wg-dashboard.service
+systemctl enable wg-dashboard.service --quiet
 systemctl restart wg-dashboard.service
 
 # Enable and start WG0 Monitor service
-sudo systemctl enable wgmonitor.service
+sudo systemctl enable wgmonitor.service --quiet
 sudo systemctl start  wgmonitor.service
 
 
@@ -716,6 +717,7 @@ systemctl restart wg-dashboard.service
 
 
 # Check if the services restarted successfully
+echo "Restarting Wireguard,  WGDashboard &  WGConfig Monitor services ....."
 wg_status=$(systemctl is-active wg-quick@wg0.service)
 dashboard_status=$(systemctl is-active wg-dashboard.service)
 wgmonitor_status=$(systemctl is-active wgmonitor.service)
