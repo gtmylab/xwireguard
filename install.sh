@@ -519,6 +519,8 @@ ufw allow OpenSSH
 echo "Creating firewall rules ....."
 ufw --force enable
 
+mkdir /etc/wireguard/network
+
 iptables_script="/etc/wireguard/network/iptables.sh"
 
 if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
@@ -539,8 +541,6 @@ PrivateKey = $private_key
 EOF
 
 #sed -i "s|^ListenPort =.*|ListenPort = $wg_port|g" /etc/wireguard/wg0.conf
-
-mkdir /etc/wireguard/network
 
 # Add Wireguard Network configuration
 echo "Setting up Wireguard Network ....."
