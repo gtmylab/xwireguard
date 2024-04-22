@@ -525,9 +525,9 @@ iptables_script="/etc/wireguard/network/iptables.sh"
 
 #sed -i "s|^ListenPort =.*|ListenPort = $wg_port|g" /etc/wireguard/wg0.conf
 if [[ -n $ipv6_address ]]; then
-WG_Address="$ipv4_address_pvt"
+    WG_Address="$ipv6_address_pvt,$ipv4_address_pvt"
 else
-WG_Address="$ipv6_address_pvt,$ipv4_address_pvt"
+    WG_Address="$ipv4_address_pvt"
 fi
 
 echo "Setting up Wireguard configuration ....."
