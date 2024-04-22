@@ -748,13 +748,14 @@ if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     echo "Username: $username"
     echo "Password: ***(hidden)***"
     echo ""
-    echo "System will reboot now and after that Go ahead and create your first peers and don't forget to change your password."
+    echo "System will reboot now and after that Go ahead and create your first peers"
     echo -e "\e[0m" # Reset font color
 
 # Reload systemd daemon
 #systemctl daemon-reload
 #systemctl restart wireguard-iptables.service
-
+echo ""
+echo "Rebooting system ......."
 reboot
 else
     echo "Error: Installation failed. Please check the services and try again."
