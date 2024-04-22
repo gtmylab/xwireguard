@@ -39,7 +39,7 @@ echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
 echo ""
 echo "                                  xWireGuard Management & Server"
 echo ""
-echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10, Ubuntu 20.04, Ubuntu 22.04 & Debian 11 system ONLY\e[0m"
+echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10, Ubuntu 20.04, Ubuntu 22.04 & Debian 11 system ONLY.\e[0m"
 echo -e "\e[32mRECOMMENDED ==> Ubuntu 20.10 \e[0m"
 echo ""
 echo "The following software will be installed on your system:"
@@ -50,12 +50,12 @@ echo "   - Gunicorn WSGI Server"
 echo "   - Python3-pip"
 echo "   - Git"
 echo "   - UFW - firewall"
-echo "   - inotify"
+echo "   - inotifywait"
 echo ""
 
  
 # Prompt the user to continue
-read -p "Would you like to continue [y/n]: " choice
+read -p "Would you like to continue now ? [y/n]: " choice
 
 if [[ "$choice" =~ ^[Yy]$ ]]; then
 
