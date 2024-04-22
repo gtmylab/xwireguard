@@ -756,9 +756,7 @@ systemctl restart wg-dashboard.service
 systemctl enable wgmonitor.service --quiet
 systemctl start  wgmonitor.service
 
-# Enable  WireGuard Config Service Trigerring
-systemctl enable check_wg_config.service --quiet
-systemctl start  check_wg_config.service
+
 
 # Seed to wg-dashboard.ini
 sed -i "s|^app_port =.*|app_port = $dashboard_port|g" $DASHBOARD_DIR/wg-dashboard.ini >/dev/null
@@ -771,6 +769,9 @@ sed -i "s|^dashboard_theme =.*|dashboard_theme = dark|g" $DASHBOARD_DIR/wg-dashb
 
 systemctl restart wg-dashboard.service
 
+# Enable  WireGuard Config Service Trigerring
+systemctl enable check_wg_config.service --quiet
+systemctl start  check_wg_config.service
 
 # Check if the services restarted successfully
 echo "Restarting Wireguard,  WGDashboard &  WGConfig Monitor services ....."
