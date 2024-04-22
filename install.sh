@@ -678,6 +678,9 @@ combine_addresses() {
     ' "$WG_CONFIG" > "$WG_CONFIG.tmp" && mv "$WG_CONFIG.tmp" "$WG_CONFIG"
 }
 
+# Sleep for 5 seconds to wait for potential modifications after reboot
+sleep 10
+
 # Monitor the config file for modifications and call the function to combine addresses
 while true; do
     inotifywait -e modify "$WG_CONFIG"
@@ -685,6 +688,33 @@ while true; do
     echo "WireGuard config file modified"
 done
 EOF_SCRIPT
+
+
+
+cat <<'EOF_SCRIPT' | sudo tee /etc/xwireguard/monitor/check_wg_config.sh >/dev/null
+#!/bin/bash
+
+# Define the path to the WireGuard config file
+WG_CONFIG="/etc/wireguard/wg0.conf"
+
+# Function to check for double lines of "Address" and modify the file if necessary
+check_and_modify_wg_config() {
+    if grep -q '^Address =' "$WG_CONFIG" && grep -q '^Address =' "$WG_CONFIG" <(tail -n +2 "$WG_CONFIG"); then
+        # Double lines of "Address" found, perform modification
+        sed -i '$a #Wireguard IPv6 Monitoring Active on this file' "$WG_CONFIG"
+        echo "Double lines of 'Address' found and modified in $WG_CONFIG"
+        # Trigger inotifywait to detect the modification
+        touch "$WG_CONFIG"
+    else
+        echo "No double lines of 'Address' found in $WG_CONFIG"
+    fi
+}
+
+# Execute the function to check and modify the wg0.conf file
+check_and_modify_wg_config
+EOF_SCRIPT
+
+
 
 
 cat <<EOF | tee -a /etc/systemd/system/wgmonitor.service >/dev/null
@@ -701,8 +731,22 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-chmod +x /etc/xwireguard/monitor/wg.sh
+cat <<EOF | tee -a /etc/systemd/system/check_wg_config.service >/dev/null
+[Unit]
+Description=Check and Modify WireGuard Config Service
+After=wg-dashboard.service
+Requires=wg-dashboard.service
 
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '/bin/sleep 5 && /etc/xwireguard/monitor/check_wg_config.sh'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+chmod +x /etc/xwireguard/monitor/wg.sh
+chmod +x /etc/xwireguard/monitor/check_wg_config.sh
 
 # Enable and start WGDashboard service
 systemctl enable wg-dashboard.service --quiet
@@ -712,6 +756,9 @@ systemctl restart wg-dashboard.service
 systemctl enable wgmonitor.service --quiet
 systemctl start  wgmonitor.service
 
+# Enable  WireGuard Config Service Trigerring
+systemctl enable check_wg_config.service --quiet
+systemctl start  check_wg_config.service
 
 # Seed to wg-dashboard.ini
 sed -i "s|^app_port =.*|app_port = $dashboard_port|g" $DASHBOARD_DIR/wg-dashboard.ini >/dev/null
