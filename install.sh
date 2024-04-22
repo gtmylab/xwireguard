@@ -700,7 +700,7 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-sudo chmod +x /etc/xwireguard/monitor/wg.sh
+chmod +x /etc/xwireguard/monitor/wg.sh
 
 
 # Enable and start WGDashboard service
@@ -708,8 +708,8 @@ systemctl enable wg-dashboard.service --quiet
 systemctl restart wg-dashboard.service
 
 # Enable and start WG0 Monitor service
-sudo systemctl enable wgmonitor.service --quiet
-sudo systemctl start  wgmonitor.service
+systemctl enable wgmonitor.service --quiet
+systemctl start  wgmonitor.service
 
 
 # Seed to wg-dashboard.ini
