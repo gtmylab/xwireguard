@@ -15,15 +15,15 @@ check_dpkg_package_installed() {
 # Check if curl is installed
 if ! check_dpkg_package_installed curl; then
     echo "Installing curl..."
-    apt update
-    apt install -y curl
+    apt update -y >/dev/null 2>&1
+    apt install -y curl >/dev/null 2>&1
 fi
 
 # Check if wget is installed
 if ! check_dpkg_package_installed wget; then
     echo "Installing wget..."
-    apt update
-    apt install -y wget
+    apt update -y
+    apt install -y wget >/dev/null 2>&1
 fi
 
 # Clear screen
@@ -345,49 +345,49 @@ fi
 # Prompt for IP version selection 
 #PS3="Choose IP version: "
 PS3="Select an option: "
-options=("IPv4")
+options=("Public IPv4")
 if [ "$ipv6_available" = true ]; then
-    options+=("IPv6")
+    options+=("Public IPv6")
 fi
 select opt in "${options[@]}"; do
     case $REPLY in
         1)
             # Display IPv4 addresses as options
-            echo "Available IPv4 addresses:"
+            echo "Available Public IPv4 addresses:"
             ipv4_addresses=$(get_ipv4_addresses)
             select ipv4_address in $ipv4_addresses; do
                 if validate_input $REPLY 1 $(wc -w <<< "$ipv4_addresses"); then
                     break
                 fi
             done
-            echo "Selected IPv4 Address: $ipv4_address"
+            echo "Selected Public IPv4 Address: $ipv4_address"
 
             # If IPv6 is available, present options to choose an IPv6 address
             if [ "$ipv6_available" = true ]; then
-                echo "Choose an IPv6 address:"
+                echo "Choose a Public IPv6 address:"
                 ipv6_addresses=$(get_ipv6_addresses)
                 select ipv6_address in $ipv6_addresses; do
                     if validate_input $REPLY 1 $(wc -w <<< "$ipv6_addresses"); then
                         break
                     fi
                 done
-                echo "Selected IPv6 Address: $ipv6_address"
+                echo "Selected Public IPv6 Address: $ipv6_address"
             fi
             break
             ;;
         2)
             if [ "$ipv6_available" = true ]; then
                 # Display IPv6 addresses as options
-                echo "Available IPv6 addresses (excluding link-local addresses):"
+                echo "Available Public IPv6 addresses (excluding link-local addresses):"
                 ipv6_addresses=$(get_ipv6_addresses)
                 select ipv6_address in $ipv6_addresses; do
                     if validate_input $REPLY 1 $(wc -w <<< "$ipv6_addresses"); then
                         break
                     fi
                 done
-                echo "Selected IPv6 Address: $ipv6_address"
+                echo "Selected Public IPv6 Address: $ipv6_address"
             else
-                echo "IPv6 is not available."
+                echo "Public IPv6 is not available."
             fi
             break
             ;;
@@ -407,7 +407,9 @@ echo ""
 echo "$hostname" | tee /etc/hostname > /dev/null
 hostnamectl set-hostname "$hostname"
 
-apt update
+echo "Update Repo & System..."
+echo "Please wait to complere process..."
+apt update -y  >/dev/null 2>&1
 
 
 # Check if Python 3 is installed
@@ -415,7 +417,7 @@ if ! check_dpkg_package_installed python3; then
     echo "Python 3 is not installed. Installing Python 3..."
 
     # Install Python 3 system-wide
-    apt install -y python3
+    apt install -y python3 >/dev/null 2>&1
 
     # Make Python 3 the default version
     update-alternatives --install /usr/bin/python python /usr/bin/python3 1
@@ -433,8 +435,8 @@ python_version=$(get_python_version)
 if [[ "$(echo "$python_version" | cut -d. -f1)" -lt 3 || "$(echo "$python_version" | cut -d. -f2)" -lt 7 ]]; then
     echo "Python version is below 3.7. Upgrading Python..."
     # Perform the system upgrade of Python
-    apt update
-    apt install -y python3
+    apt update -y
+    apt install -y python3 >/dev/null 2>&1
 else
     echo "Python version is 3.7 or above."
 fi
@@ -442,25 +444,25 @@ fi
 # Check for WireGuard dependencies and install them if not present
 if ! check_dpkg_package_installed wireguard-tools; then
     echo "Installing WireGuard dependencies..."
-    apt install -y wireguard-tools
+    apt install -y wireguard-tools >/dev/null 2>&1
 fi
 
 
 # Install git if not installed
 if ! check_package_installed git; then
     echo "Installing git..."
-    apt-get install -y git
+    apt-get install -y git >/dev/null 2>&1
 fi
 
 # Install ufw if not installed
 if ! check_package_installed ufw; then
     echo "Installing ufw..."
-    apt-get install -y ufw
+    apt-get install -y ufw >/dev/null 2>&1
 fi
 
 # Now that dependencies are ensured to be installed, install WireGuard
 echo "Installing WireGuard..."
-apt install -y wireguard
+apt install -y wireguard >/dev/null 2>&1
 
 # Generate Wireguard keys
 private_key=$(wg genkey)
@@ -571,6 +573,7 @@ cd /etc || exit
 # Create a directory xwireguard if it doesn't exist
 if [ ! -d "xwireguard" ]; then
     mkdir xwireguard
+    mkdir /etc/xwireguard/monitor
 fi
 
 # Change directory to /etc/xwireguard
@@ -612,9 +615,65 @@ chmod 664 /etc/systemd/system/wg-dashboard.service
 
 
 
+cat <<EOF | tee -a /etc/xwireguard/monitor/wg.sh
+#!/bin/bash
+
+# Define the path to the WireGuard config file
+WG_CONFIG="/etc/wireguard/wg0.conf"
+
+# Function to combine Address lines under the [Interface] section
+combine_addresses() {
+    awk '
+    $1 == "[Interface]" { print; iface=1; next }
+    iface && $1 == "Address" {
+        if (address == "") {
+            address = $3
+        } else {
+            address = address "," $3
+        }
+        next
+    }
+    iface && address != "" {
+        print "Address =", address
+        address = ""
+    }
+    { print }
+    END { if (address != "") print "Address =", address }
+    ' "$WG_CONFIG" > "$WG_CONFIG.tmp" && mv "$WG_CONFIG.tmp" "$WG_CONFIG"
+}
+
+# Monitor the config file for modifications and call the function to combine addresses
+while true; do
+    inotifywait -e modify "$WG_CONFIG"
+    combine_addresses
+    echo "WireGuard config file modified"
+done
+EOF
+
+cat <<EOF | tee -a /etc/systemd/system/wgmonitor.service
+[Unit]
+Description=WireGuard Conf Monitor Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/etc/xwireguard/monitor/wg.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo chmod +x /etc/xwireguard/monitor/wg.sh
+
+
 # Enable and start WGDashboard service
 systemctl enable wg-dashboard.service
 systemctl restart wg-dashboard.service
+
+# Enable and start WG0 Monitor service
+sudo systemctl enable wgmonitor.service
+sudo systemctl start  wgmonitor.service
 
 
 # Seed to wg-dashboard.ini
@@ -632,9 +691,11 @@ systemctl restart wg-dashboard.service
 # Check if the services restarted successfully
 wg_status=$(systemctl is-active wg-quick@wg0.service)
 dashboard_status=$(systemctl is-active wg-dashboard.service)
+wgmonitor_status=$(systemctl is-active wgmonitor.service)
 
 echo "Wireguard Status: $wg_status"
 echo "WGDashboard Status: $dashboard_status"
+echo "WGConfig Monitor Status: $wgmonitor_status"
 
 if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     # Get the server IPv4 address
