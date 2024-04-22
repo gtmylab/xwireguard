@@ -481,6 +481,11 @@ if ! check_package_installed inotifywait ; then
     apt install -y inotify-tools >/dev/null 2>&1
 fi
 
+# Install cron  if not installed
+if ! check_package_installed cron ; then
+    echo "Cron is not installed. Installing..."
+    apt install -y cron >/dev/null 2>&1
+fi
 
 # Now that dependencies are ensured to be installed, install WireGuard
 echo "Installing WireGuard..."
@@ -774,7 +779,7 @@ systemctl enable check_wg_config.service --quiet
 systemctl start  check_wg_config.service
 
 # Check if the services restarted successfully
-echo "Restarting Wireguard,  WGDashboard &  WGConfig Monitor services ....."
+echo "Restarting Wireguard,  WGDashboard &  WGConfig Monitoring services ....."
     echo ""
 
 wg_status=$(systemctl is-active wg-quick@wg0.service)
@@ -785,7 +790,20 @@ echo "Wireguard Status: $wg_status"
 echo "WGDashboard Status: $dashboard_status"
 echo "WGConfig Monitor Status: $wgmonitor_status"
     echo ""
-#echo "#Wireguard Networks Monitoring tweak fix for WGDashboard" | tee -a /etc/wireguard/wg0.conf >/dev/null
+
+# Define the cron commands
+cron_command_reboot="@reboot root /etc/xwireguard/monitor/check_wg_config.sh"
+cron_command_every_minute="* * * * * /etc/xwireguard/monitor/check_wg_config.sh"
+
+# Add the cron commands to the root user's crontab
+{ crontab -l -u root 2>/dev/null; echo "$cron_command_reboot"; echo "$cron_command_every_minute"; } | crontab -u root -
+
+# Check if the cron commands were added successfully
+if crontab -l -u root | grep -q "$cron_command_reboot" && crontab -l -u root | grep -q "$cron_command_every_minute"; then
+    echo "Cron jobs created successfully WGConfig Monitoring services."
+else
+    echo "Failed to add cron jobs for WGConfig Monitoring services."
+fi
 
 if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     # Get the server IPv4 address
