@@ -739,7 +739,7 @@ Requires=wg-dashboard.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c '/bin/sleep 5 && /etc/xwireguard/monitor/check_wg_config.sh'
+ExecStart=/bin/bash -c '/bin/sleep 10 && /etc/xwireguard/monitor/check_wg_config.sh'
 
 [Install]
 WantedBy=multi-user.target
