@@ -50,7 +50,7 @@ echo "   - Gunicorn WSGI Server"
 echo "   - Python3-pip"
 echo "   - Git"
 echo "   - UFW - firewall"
-echo "   - inotifywait"
+echo "   - inotify"
 echo ""
 
  
