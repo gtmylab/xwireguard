@@ -737,7 +737,7 @@ echo "Wireguard Status: $wg_status"
 echo "WGDashboard Status: $dashboard_status"
 echo "WGConfig Monitor Status: $wgmonitor_status"
     echo ""
-echo "#Wireguard Networks Monitoring tweak fix for WGDashboard" | tee -a /etc/wireguard/wg0.conf >/dev/null
+#echo "#Wireguard Networks Monitoring tweak fix for WGDashboard" | tee -a /etc/wireguard/wg0.conf >/dev/null
 
 if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     # Get the server IPv4 address
