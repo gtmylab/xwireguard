@@ -39,7 +39,7 @@ echo "  _|_|_|              _|    _|_|_|  _|_|_|_|    _|_|_|  _|        _|"
 echo ""
 echo "                                  xWireGuard Management & Server"
 echo ""
-echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10, Ubuntu 20.04, Ubuntu 22.04 & Debian 11 system ONLY.\e[0m"
+echo -e "\e[1;31mWARNING ! Install only in Ubuntu 20.10, Ubuntu 20.04, Ubuntu 22.04 & Debian 11 system ONLY\e[0m"
 echo -e "\e[32mRECOMMENDED ==> Ubuntu 20.10 \e[0m"
 echo ""
 echo "The following software will be installed on your system:"
@@ -422,8 +422,8 @@ echo ""
 echo "$hostname" | tee /etc/hostname > /dev/null
 hostnamectl set-hostname "$hostname"
 
-echo "Update Repo & System..."
-echo "Please wait to complere process..."
+echo "Updating Repo & System..."
+echo "Please wait to complete process..."
 apt update -y  >/dev/null 2>&1
 
 
@@ -493,8 +493,8 @@ public_key=$(echo "$private_key" | wg pubkey)
 
 
 # Enable IPv4 and IPv6 forwarding
-sed -i '/^#net.ipv4.ip_forward=1/s/^#//' /etc/sysctl.conf
-sed -i '/^#net.ipv6.conf.all.forwarding=1/s/^#//' /etc/sysctl.conf
+sed -i '/^#net.ipv4.ip_forward=1/s/^#//' /etc/sysctl.conf >/dev/null
+sed -i '/^#net.ipv6.conf.all.forwarding=1/s/^#//' /etc/sysctl.conf >/dev/null
 
 # Apply changes
 sysctl -p
@@ -517,8 +517,9 @@ else
 WG_Address="$ipv6_address_pvt,$ipv4_address_pvt"
 fi
 
+echo "Setting up Wireguard configuration ....."
 # Add Wireguard configuration
-cat <<EOF | tee -a /etc/wireguard/wg0.conf
+cat <<EOF | tee -a /etc/wireguard/wg0.conf >/dev/null
 [Interface]
 Address = $WG_Address
 MTU = 1420
@@ -532,10 +533,11 @@ EOF
 mkdir /etc/wireguard/network
 
 # Add Wireguard Network configuration
+echo "Setting up Wireguard Network ....."
 ipv4_address_pvt0=$(convert_ipv4_format "$ipv4_address_pvt")
 # Define the path to the iptables.sh script
 iptables_script="/etc/wireguard/network/iptables.sh"
-cat <<EOF | tee -a "$iptables_script"
+cat <<EOF | tee -a "$iptables_script" >/dev/null
 #!/bin/bash
 
 # Wait for the network interface to be up
@@ -559,7 +561,7 @@ ufw route allow in on wg0 out on $interface
 EOF
 
 
-cat <<EOF | tee -a /etc/systemd/system/wireguard-iptables.service
+cat <<EOF | tee -a /etc/systemd/system/wireguard-iptables.service >/dev/null
 [Unit]
 Description=Setup iptables rules for WireGuard
 After=network-online.target
@@ -578,14 +580,15 @@ chmod +x $iptables_script
 # Uncomment the ip6tables command if IPv6 is available
 #if $ipv6_address && grep -q "#ip6tables" "$iptables_script"; then
 if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
-    sed -i 's/#ip6tables/ip6tables/' "$iptables_script"
-    sed -i "s|::/0|$ipv6_address_pvt|" "$iptables_script"
+    sed -i 's/#ip6tables/ip6tables/' "$iptables_script" >/dev/null
+    sed -i "s|::/0|$ipv6_address_pvt|" "$iptables_script" >/dev/null
     echo "Uncommented ip6tables command in $iptables_script"
 fi
 
 systemctl enable wireguard-iptables.service
 
 # Enable Wireguard service
+echo "Enabling Wireguard Service ....."
 systemctl enable wg-quick@wg0.service
 systemctl start wg-quick@wg0.service
 
@@ -606,8 +609,8 @@ cd xwireguard || exit
 echo "Installing WGDashboard ....."
 git clone -q -b v3.1-dev https://github.com/donaldzou/WGDashboard.git wgdashboard
 cd wgdashboard/src
-apt install python3-pip -y && pip install gunicorn && pip install -r requirements.txt --ignore-installed
-#apt install python3-pip -y >/dev/null 2>&1 && pip install gunicorn >/dev/null 2>&1 && pip install -r requirements.txt --ignore-installed >/dev/null 2>&1
+#apt install python3-pip -y && pip install gunicorn && pip install -r requirements.txt --ignore-installed
+apt install python3-pip -y >/dev/null 2>&1 && pip install gunicorn >/dev/null 2>&1 && pip install -r requirements.txt --ignore-installed >/dev/null 2>&1
 
 chmod u+x wgd.sh
 ./wgd.sh install
@@ -627,9 +630,9 @@ SERVICE_FILE="$DASHBOARD_DIR/wg-dashboard.service"
 PYTHON_PATH=$(which python3)
 
 # Update service file with the correct directory and python path
-sed -i "s|{{APP_ROOT}}|$DASHBOARD_DIR|g" "$SERVICE_FILE"
-sed -i "/Environment=\"VIRTUAL_ENV={{VIRTUAL_ENV}}\"/d" "$SERVICE_FILE"
-sed -i "s|{{VIRTUAL_ENV}}/bin/python3|$PYTHON_PATH|g" "$SERVICE_FILE"
+sed -i "s|{{APP_ROOT}}|$DASHBOARD_DIR|g" "$SERVICE_FILE" >/dev/null
+sed -i "/Environment=\"VIRTUAL_ENV={{VIRTUAL_ENV}}\"/d" "$SERVICE_FILE" >/dev/null
+sed -i "s|{{VIRTUAL_ENV}}/bin/python3|$PYTHON_PATH|g" "$SERVICE_FILE" >/dev/null
 
 # Copy the service file to systemd folder
 cp "$SERVICE_FILE" /etc/systemd/system/wg-dashboard.service
@@ -639,7 +642,7 @@ chmod 664 /etc/systemd/system/wg-dashboard.service
 
 
 
-cat <<EOF | tee -a /etc/xwireguard/monitor/wg.sh
+cat <<EOF | tee -a /etc/xwireguard/monitor/wg.sh >/dev/null
 #!/bin/bash
 
 # Define the path to the WireGuard config file
@@ -674,7 +677,7 @@ while true; do
 done
 EOF
 
-cat <<EOF | tee -a /etc/systemd/system/wgmonitor.service
+cat <<EOF | tee -a /etc/systemd/system/wgmonitor.service >/dev/null
 [Unit]
 Description=WireGuard Conf Monitor Service
 After=network.target
@@ -701,12 +704,12 @@ sudo systemctl start  wgmonitor.service
 
 
 # Seed to wg-dashboard.ini
-sed -i "s|^app_port =.*|app_port = $dashboard_port|g" $DASHBOARD_DIR/wg-dashboard.ini
-sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" $DASHBOARD_DIR/wg-dashboard.ini
-sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" $DASHBOARD_DIR/wg-dashboard.ini
-sed -i "s|^password =.*|password = $hashed_password|g" $DASHBOARD_DIR/wg-dashboard.ini
-sed -i "s|^username =.*|username = $username|g" $DASHBOARD_DIR/wg-dashboard.ini
-sed -i "s|^dashboard_theme =.*|dashboard_theme = dark|g" $DASHBOARD_DIR/wg-dashboard.ini
+sed -i "s|^app_port =.*|app_port = $dashboard_port|g" $DASHBOARD_DIR/wg-dashboard.ini >/dev/null
+sed -i "s|^peer_global_dns =.*|peer_global_dns = $dns|g" $DASHBOARD_DIR/wg-dashboard.ini >/dev/null
+sed -i "s|^peer_endpoint_allowed_ip =.*|peer_endpoint_allowed_ip = $allowed_ip|g" $DASHBOARD_DIR/wg-dashboard.ini >/dev/null
+sed -i "s|^password =.*|password = $hashed_password|g" $DASHBOARD_DIR/wg-dashboard.ini >/dev/null
+sed -i "s|^username =.*|username = $username|g" $DASHBOARD_DIR/wg-dashboard.ini >/dev/null
+sed -i "s|^dashboard_theme =.*|dashboard_theme = dark|g" $DASHBOARD_DIR/wg-dashboard.ini >/dev/null
 
 
 systemctl restart wg-dashboard.service
