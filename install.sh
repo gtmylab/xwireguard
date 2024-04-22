@@ -502,15 +502,24 @@ ssh_port=$(ss -tlnp | grep 'sshd' | awk '{print $4}' | awk -F ':' '{print $NF}' 
 
 echo "Configuring firewall (UFW) ....."
 # Configure firewall (UFW)
-ufw disable --quiet
+echo "Stopping firewall (UFW) ....."
+ufw disable
 echo "Creating firewall rules ....."
-ufw allow 10086/tcp --quiet
-ufw allow $ssh_port/tcp --quiet
-ufw allow $dashboard_port/tcp --quiet
-ufw allow $wg_port/udp --quiet
-ufw allow 53/udp --quiet
-ufw allow OpenSSH --quiet
+ufw allow 10086/tcp
+echo "Creating firewall rules ....."
+ufw allow $ssh_port/tcp
+echo "Creating firewall rules ....."
+ufw allow $dashboard_port/tcp
+echo "Creating firewall rules ....."
+ufw allow $wg_port/udp
+echo "Creating firewall rules ....."
+ufw allow 53/udp
+echo "Creating firewall rules ....."
+ufw allow OpenSSH
+echo "Creating firewall rules ....."
 ufw --force enable
+
+iptables_script="/etc/wireguard/network/iptables.sh"
 
 if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
 WG_Address="$ipv4_address_pvt"
@@ -537,7 +546,6 @@ mkdir /etc/wireguard/network
 echo "Setting up Wireguard Network ....."
 ipv4_address_pvt0=$(convert_ipv4_format "$ipv4_address_pvt")
 # Define the path to the iptables.sh script
-iptables_script="/etc/wireguard/network/iptables.sh"
 cat <<EOF | tee -a "$iptables_script" >/dev/null
 #!/bin/bash
 
@@ -590,7 +598,7 @@ systemctl enable wireguard-iptables.service --quiet
 
 # Enable Wireguard service
 echo "Enabling Wireguard Service ....."
-systemctl enable wg-quick@wg0.service
+systemctl enable wg-quick@wg0.service --quiet
 systemctl start wg-quick@wg0.service
 
 
@@ -718,13 +726,16 @@ systemctl restart wg-dashboard.service
 
 # Check if the services restarted successfully
 echo "Restarting Wireguard,  WGDashboard &  WGConfig Monitor services ....."
+    echo ""
+
 wg_status=$(systemctl is-active wg-quick@wg0.service)
 dashboard_status=$(systemctl is-active wg-dashboard.service)
 wgmonitor_status=$(systemctl is-active wgmonitor.service)
-
+    echo ""
 echo "Wireguard Status: $wg_status"
 echo "WGDashboard Status: $dashboard_status"
 echo "WGConfig Monitor Status: $wgmonitor_status"
+    echo ""
 
 if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     # Get the server IPv4 address
