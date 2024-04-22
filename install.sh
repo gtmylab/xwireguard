@@ -435,7 +435,7 @@ python_version=$(get_python_version)
 if [[ "$(echo "$python_version" | cut -d. -f1)" -lt 3 || "$(echo "$python_version" | cut -d. -f2)" -lt 7 ]]; then
     echo "Python version is below 3.7. Upgrading Python..."
     # Perform the system upgrade of Python
-    apt update -y
+    apt update -y  >/dev/null 2>&1
     apt install -y python3 >/dev/null 2>&1
 else
     echo "Python version is 3.7 or above."
@@ -451,14 +451,21 @@ fi
 # Install git if not installed
 if ! check_package_installed git; then
     echo "Installing git..."
-    apt-get install -y git >/dev/null 2>&1
+    apt install -y git >/dev/null 2>&1
 fi
 
 # Install ufw if not installed
 if ! check_package_installed ufw; then
     echo "Installing ufw..."
-    apt-get install -y ufw >/dev/null 2>&1
+    apt install -y ufw >/dev/null 2>&1
 fi
+
+# Install inotifywait if not installed
+if ! check_package_installed inotifywait ; then
+    echo "Installing inotifywait..."
+    apt install -y inotify-tools >/dev/null 2>&1
+fi
+
 
 # Now that dependencies are ensured to be installed, install WireGuard
 echo "Installing WireGuard..."
@@ -478,6 +485,7 @@ sed -i '/^#net.ipv6.conf.all.forwarding=1/s/^#//' /etc/sysctl.conf
 sysctl -p
 ssh_port=$(ss -tlnp | grep 'sshd' | awk '{print $4}' | awk -F ':' '{print $NF}' | sort -u)
 
+echo "Configuring firewall (UFW) rules ....."
 # Configure firewall (UFW)
 ufw disable
 ufw allow 10086/tcp
@@ -580,7 +588,8 @@ fi
 cd xwireguard || exit
 
 # Install WGDashboard
-git clone -b v3.1-dev https://github.com/donaldzou/WGDashboard.git wgdashboard
+echo "Installing WGDashboard ....."
+git clone -q -b v3.1-dev https://github.com/donaldzou/WGDashboard.git wgdashboard
 cd wgdashboard/src
 apt install python3-pip -y && pip install gunicorn && pip install -r requirements.txt --ignore-installed
 #apt install python3-pip -y >/dev/null 2>&1 && pip install gunicorn >/dev/null 2>&1 && pip install -r requirements.txt --ignore-installed >/dev/null 2>&1
