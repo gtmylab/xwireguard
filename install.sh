@@ -780,17 +780,6 @@ systemctl start  check_wg_config.service
 
 # Check if the services restarted successfully
 echo "Restarting Wireguard,  WGDashboard &  WGConfig Monitoring services ....."
-    echo ""
-
-wg_status=$(systemctl is-active wg-quick@wg0.service)
-dashboard_status=$(systemctl is-active wg-dashboard.service)
-wgmonitor_status=$(systemctl is-active wgmonitor.service)
-    echo ""
-echo "Wireguard Status: $wg_status"
-echo "WGDashboard Status: $dashboard_status"
-echo "WGConfig Monitor Status: $wgmonitor_status"
-    echo ""
-
 # Define the cron commands
 cron_command_reboot="@reboot root /etc/xwireguard/monitor/check_wg_config.sh"
 cron_command_every_minute="* * * * * /etc/xwireguard/monitor/check_wg_config.sh"
@@ -804,6 +793,18 @@ if crontab -l -u root | grep -q "$cron_command_reboot" && crontab -l -u root | g
 else
     echo "Failed to add cron jobs for WGConfig Monitoring services."
 fi
+    echo ""
+
+wg_status=$(systemctl is-active wg-quick@wg0.service)
+dashboard_status=$(systemctl is-active wg-dashboard.service)
+wgmonitor_status=$(systemctl is-active wgmonitor.service)
+    echo ""
+echo "Wireguard Status: $wg_status"
+echo "WGDashboard Status: $dashboard_status"
+echo "WGConfig Monitor Status: $wgmonitor_status"
+    echo ""
+
+
 
 if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     # Get the server IPv4 address
