@@ -50,13 +50,28 @@ echo "   - Gunicorn WSGI Server"
 echo "   - Python3-pip"
 echo "   - Git"
 echo "   - UFW - firewall"
+echo "   - inotifywait"
 echo ""
 
-
+ 
 # Prompt the user to continue
 read -p "Would you like to continue [y/n]: " choice
 
 if [[ "$choice" =~ ^[Yy]$ ]]; then
+
+ # Check if the system is CentOS, Debian, or Ubuntu
+    if [ -f "/etc/centos-release" ]; then
+        echo "Detected CentOS..."
+        pkg_manager="yum"
+        ufw_package="firewalld"
+    elif [ -f "/etc/debian_version" ]; then
+        echo "Detected Debian or Ubuntu..."
+        pkg_manager="apt"
+        ufw_package="ufw"
+    else
+        echo "Unsupported distribution."
+        exit 1
+    fi
 # Prompt the user to enter hostname until a valid one is provided
 # Function to validate hostname
 validate_hostname() {
