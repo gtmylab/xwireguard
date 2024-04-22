@@ -523,7 +523,12 @@ mkdir /etc/wireguard/network
 
 iptables_script="/etc/wireguard/network/iptables.sh"
 
-
+#sed -i "s|^ListenPort =.*|ListenPort = $wg_port|g" /etc/wireguard/wg0.conf
+if [[ -n $ipv6_address ]]; then
+WG_Address="$ipv4_address_pvt"
+else
+WG_Address="$ipv6_address_pvt,$ipv4_address_pvt"
+fi
 
 echo "Setting up Wireguard configuration ....."
 # Add Wireguard configuration
@@ -536,12 +541,7 @@ ListenPort = $wg_port
 PrivateKey = $private_key
 EOF
 
-#sed -i "s|^ListenPort =.*|ListenPort = $wg_port|g" /etc/wireguard/wg0.conf
-if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
-WG_Address="$ipv4_address_pvt"
-else
-WG_Address="$ipv6_address_pvt,$ipv4_address_pvt"
-fi
+
 # Add Wireguard Network configuration
 echo "Setting up Wireguard Network ....."
 ipv4_address_pvt0=$(convert_ipv4_format "$ipv4_address_pvt")
@@ -584,6 +584,7 @@ WantedBy=multi-user.target
 EOF
 
 chmod +x $iptables_script
+
 
 
 # Uncomment the ip6tables command if IPv6 is available
