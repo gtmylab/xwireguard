@@ -37,19 +37,38 @@ printf "   - UFW - firewall\n"
 printf "   - inotifywait\n\n"
 printf "\n\n"
 
-  # Check if the system is CentOS, Debian, or Ubuntu
-    if [ -f "/etc/centos-release" ]; then
-        printf "Detected CentOS...\n"
-        pkg_manager="yum"
-        ufw_package="firewalld"
-    elif [ -f "/etc/debian_version" ]; then
-        printf "Detected Debian or Ubuntu...\n"
-        pkg_manager="apt"
-        ufw_package="ufw"
+#!/bin/bash
+
+# Check if the system is CentOS, Debian, or Ubuntu
+if [ -f "/etc/centos-release" ]; then
+    # CentOS
+    centos_version=$(rpm -q --queryformat '%{VERSION}' centos-release)
+    printf "Detected CentOS %s...\n" "$centos_version"
+    pkg_manager="yum"
+    ufw_package="firewalld"
+elif [ -f "/etc/debian_version" ]; then
+    # Debian or Ubuntu
+    if [ -f "/etc/os-release" ]; then
+        source "/etc/os-release"
+        if [ "$ID" = "debian" ]; then
+            printf "Detected Debian %s...\n" "$VERSION_CODENAME"
+        elif [ "$ID" = "ubuntu" ]; then
+            printf "Detected Ubuntu %s...\n" "$VERSION_CODENAME"
+        else
+            printf "Unsupported distribution.\n"
+            exit 1
+        fi
     else
         printf "Unsupported distribution.\n"
         exit 1
     fi
+    pkg_manager="apt"
+    ufw_package="ufw"
+else
+    printf "Unsupported distribution.\n"
+    exit 1
+fi
+
 # Prompt the user to continue
 read -p "Would you like to continue now ? [y/n]: " choice
 
@@ -542,7 +561,7 @@ ipv4_address_pvt0=$(convert_ipv4_format "$ipv4_address_pvt")
 
 # Define the function for seeding iptables rules on CentOS
 seed_centos_iptables() {
-cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
+cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh" >/dev/null
 #!/bin/bash
 
 # Wait for the network interface to be up
@@ -558,7 +577,7 @@ EOF
 
 # Check if IPv6 is available
 if [[ -n $ipv6_address ]]; then
-    cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
+    cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh" >/dev/null
 #ip6tables
 firewall-cmd --zone=public --add-rich-rule='rule family="ipv6" source address="$ipv6_address_pvt0" masquerade'
 firewall-cmd --add-rich-rule='rule family="ipv6" source address="$ipv6_address_pvt0" port protocol="udp" port="$wg_port" accept'
@@ -567,7 +586,7 @@ EOF
 fi
 
 # Add custom route for WireGuard interface
-cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
+cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh" >/dev/null
 # Add custom route for WireGuard interface
 ip route add default dev wg0
 
@@ -579,7 +598,7 @@ EOF
 
 # Define the function for seeding firewall-cmd rules on Ubuntu
 seed_ubuntu_firewallcmd() {
-cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
+cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh" >/dev/null
 # Wait for the network interface to be up
 while ! ip link show dev $interface up; do
     sleep 1
@@ -594,7 +613,7 @@ iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 
 EOF
 # Add custom route for WireGuard interface
-cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
+cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh" >/dev/null
 # Add custom route for WireGuard interface
 ip route add default dev wg0
 
@@ -862,6 +881,6 @@ else
     printf "Error: Installation failed. Please check the services and try again.\n"
 fi
 else
-    printf "Sorry! Installation cancelled.\n"
+    printf "Installation cancelled.\n"
     exit 0
 fi
