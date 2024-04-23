@@ -12,8 +12,7 @@ check_dpkg_package_installed() {
     dpkg -s "$1" >/dev/null 2>&1
 }
 
-
-# Clear screen
+# Clear screen and get it
 clear
 interface=$(ip route list default | awk '$1 == "default" {print $5}')
 
