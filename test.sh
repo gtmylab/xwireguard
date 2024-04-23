@@ -43,7 +43,7 @@ printf "\n\n"
         pkg_manager="yum"
         ufw_package="firewalld"
     elif [ -f "/etc/debian_version" ]; then
-        printf "Detected OS: Debian or Ubuntu.\n"
+        printf "Detected Debian or Ubuntu...\n"
         pkg_manager="apt"
         ufw_package="ufw"
     else
@@ -535,30 +535,14 @@ EOF
 
 # Define the path to the iptables.sh script
 mkdir /etc/wireguard/network
-iptables_script="/etc/wireguard/network/iptables.sh"
 
 # Add Wireguard Network configuration
 printf "Setting up Wireguard Network .....\n"
 ipv4_address_pvt0=$(convert_ipv4_format "$ipv4_address_pvt")
 
-
-# Determine the distribution to choose between iptables or firewall-cmd
-if [ -f /etc/redhat-release ]; then
-    # CentOS or RHEL
-    seed_centos_iptables
-elif [ -f /etc/lsb-release ]; then
-    # Ubuntu or Debian
-    seed_ubuntu_firewallcmd
-else
-    echo "Unsupported distribution."
-    exit 1
-fi
-
-
 # Define the function for seeding iptables rules on CentOS
 seed_centos_iptables() {
-    iptables_script="/etc/wireguard/network/iptables.sh"
-    cat <<EOF | tee -a "$iptables_script"
+cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
 #!/bin/bash
 
 # Wait for the network interface to be up
@@ -574,7 +558,7 @@ EOF
 
 # Check if IPv6 is available
 if [[ -n $ipv6_address ]]; then
-    cat <<EOF | tee -a "$iptables_script"
+    cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
 #ip6tables
 firewall-cmd --zone=public --add-rich-rule='rule family="ipv6" source address="$ipv6_address_pvt0" masquerade'
 firewall-cmd --add-rich-rule='rule family="ipv6" source address="$ipv6_address_pvt0" port protocol="udp" port="$wg_port" accept'
@@ -583,7 +567,7 @@ EOF
 fi
 
 # Add custom route for WireGuard interface
-cat <<EOF | tee -a "$iptables_script"
+cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
 # Add custom route for WireGuard interface
 ip route add default dev wg0
 
@@ -595,8 +579,7 @@ EOF
 
 # Define the function for seeding firewall-cmd rules on Ubuntu
 seed_ubuntu_firewallcmd() {
-    iptables_script="/etc/wireguard/network/iptables.sh"
-    cat <<EOF | tee -a "$iptables_script"
+cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
 # Wait for the network interface to be up
 while ! ip link show dev $interface up; do
     sleep 1
@@ -611,7 +594,7 @@ iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 
 EOF
 # Add custom route for WireGuard interface
-cat <<EOF | tee -a "$iptables_script"
+cat <<EOF | tee -a "/etc/wireguard/network/iptables.sh"
 # Add custom route for WireGuard interface
 ip route add default dev wg0
 
@@ -621,6 +604,25 @@ ufw route allow in on wg0 out on $interface
 EOF
 }
 
+# Determine the distribution to choose between iptables or firewall-cmd
+if [ -f /etc/redhat-release ]; then
+    # CentOS or RHEL
+    seed_centos_iptables
+elif [ -f /etc/lsb-release ]; then
+    # Ubuntu or Debian
+    seed_ubuntu_firewallcmd
+else
+    echo "Unsupported distribution."
+    exit 1
+fi
+
+iptables_script="/etc/wireguard/network/iptables.sh"
+# Uncomment the ip6tables command if IPv6 is available
+#if $ipv6_address && grep -q "#ip6tables" "$iptables_script"; then
+if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
+    sed -i 's/#ip6tables/ip6tables/' "$iptables_script" >/dev/null
+    sed -i "s|::/0|$ipv6_address_pvt|" "$iptables_script" >/dev/null
+fi
 
 cat <<EOF | tee -a /etc/systemd/system/wireguard-iptables.service >/dev/null
 [Unit]
@@ -637,12 +639,7 @@ EOF
 
 chmod +x $iptables_script
 
-# Uncomment the ip6tables command if IPv6 is available
-#if $ipv6_address && grep -q "#ip6tables" "$iptables_script"; then
-if [[ -n $ipv6_address ]] && grep -q "#ip6tables" "$iptables_script"; then
-    sed -i 's/#ip6tables/ip6tables/' "$iptables_script" >/dev/null
-    sed -i "s|::/0|$ipv6_address_pvt|" "$iptables_script" >/dev/null
-fi
+
 
 systemctl enable wireguard-iptables.service --quiet
 
@@ -865,6 +862,6 @@ else
     printf "Error: Installation failed. Please check the services and try again.\n"
 fi
 else
-    printf "Installation cancelled.\n"
+    printf "Sorry! Installation cancelled.\n"
     exit 0
 fi
