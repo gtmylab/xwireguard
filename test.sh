@@ -37,7 +37,6 @@ printf "   - UFW - firewall\n"
 printf "   - inotifywait\n\n"
 printf "\n\n"
 
-#!/bin/bash
 
 # Check if the system is CentOS, Debian, or Ubuntu
 if [ -f "/etc/centos-release" ]; then
@@ -51,9 +50,11 @@ elif [ -f "/etc/debian_version" ]; then
     if [ -f "/etc/os-release" ]; then
         source "/etc/os-release"
         if [ "$ID" = "debian" ]; then
-            printf "Detected Debian %s...\n" "$VERSION_CODENAME"
+            debian_version=$(cat /etc/debian_version)
+            printf "Detected Debian %s...\n" "$debian_version"
         elif [ "$ID" = "ubuntu" ]; then
-            printf "Detected Ubuntu %s...\n" "$VERSION_CODENAME"
+            ubuntu_version=$(lsb_release -rs)
+            printf "Detected Ubuntu %s...\n" "$ubuntu_version"
         else
             printf "Unsupported distribution.\n"
             exit 1
@@ -68,6 +69,8 @@ else
     printf "Unsupported distribution.\n"
     exit 1
 fi
+
+printf "\n\n"
 
 # Prompt the user to continue
 read -p "Would you like to continue now ? [y/n]: " choice
@@ -418,7 +421,7 @@ hostnamectl set-hostname "$hostname"
 
 printf "Updating Repo & System...\n"
 printf "Please wait to complete process...\n"
- $pkg_manager update -y  >/dev/null 2>&1
+$pkg_manager update -y  >/dev/null 2>&1
 
 
 # Check if Python 3 is installed
@@ -450,12 +453,24 @@ else
     printf "Python version is 3.7 or above.\n"
 fi
 
+
+if [ "$pkg_manager" == "apt" ]; then
 # Check for WireGuard dependencies and install them if not present
 if ! check_dpkg_package_installed wireguard-tools; then
     printf "Installing WireGuard dependencies...\n"
      $pkg_manager install -y wireguard-tools >/dev/null 2>&1
+     # Now that dependencies are ensured to be installed, install WireGuard
+    printf "Installing WireGuard...\n"
+    $pkg_manager install -y wireguard >/dev/null 2>&1
 fi
-
+elif [ "$pkg_manager" == "yum" ]; then
+printf "Installing WireGuard dependencies...\n"
+$pkg_manager install  -y epel-release https://www.elrepo.org/elrepo-release-7.el7.elrepo.noarch.rpm >/dev/null 2>&1
+$pkg_manager install  -y yum-plugin-elrepo  >/dev/null 2>&1
+printf "Installing WireGuard...\n"
+$pkg_manager install  -y kmod-wireguard wireguard-tools  >/dev/null 2>&1
+mkdir -p /etc/wireguard/
+fi
 
 # Install git if not installed
 if ! check_package_installed git; then
@@ -481,9 +496,6 @@ if ! check_package_installed cron ; then
      $pkg_manager install -y cron >/dev/null 2>&1
 fi
 
-# Now that dependencies are ensured to be installed, install WireGuard
-printf "Installing WireGuard...\n"
- $pkg_manager install -y wireguard >/dev/null 2>&1
 
 # Generate Wireguard keys
 private_key=$(wg genkey 2>/dev/null)
