@@ -12,7 +12,8 @@ check_dpkg_package_installed() {
     dpkg -s "$1" >/dev/null 2>&1
 }
 
-# Clear screen and get it
+
+# Clear screen
 clear
 interface=$(ip route list default | awk '$1 == "default" {print $5}')
 
@@ -42,13 +43,14 @@ printf "\n\n"
         pkg_manager="yum"
         ufw_package="firewalld"
     elif [ -f "/etc/debian_version" ]; then
-        printf "Detected System as Debian or Ubuntu.\n"
+        printf "Detected Debian or Ubuntu...\n"
         pkg_manager="apt"
         ufw_package="ufw"
     else
         printf "Unsupported distribution.\n"
         exit 1
     fi
+    printf "\n\n"
 # Prompt the user to continue
 read -p "Would you like to continue now ? [y/n]: " choice
 
@@ -76,7 +78,7 @@ validate_hostname() {
         elif validate_hostname "$hostname"; then
             break
         else
-            echo "Invalid hostname. Please enter a valid hostname."
+            printf "Invalid hostname. Please enter a valid hostname.\n"
         fi
     done
 
@@ -86,24 +88,24 @@ while true; do
     if [[ -n "$username" ]]; then
         break
     else
-        echo "Username cannot be empty. Please specify a username."
+        printf "Username cannot be empty. Please specify a username.\n"
     fi
 done
 
 while true; do
     # Prompt the user to enter a password (without showing the input)
     read -s -p "Specify a Password: " password
-    echo ""
+    printf "\n"
 
     # Prompt the user to confirm the password
     read -s -p "Confirm Password: " confirm_password
-    echo ""
+    printf "\n"
 
     # Check if the passwords match
     if [ "$password" != "$confirm_password" ]; then
-        echo -e "\e[1;31mError: Passwords do not match. Please try again.\e[0m"
+            printf "\e[1;31mError: Passwords do not match. Please try again.\e[0m\n"
     elif [ -z "$password" ]; then
-        echo "Password cannot be empty. Please specify a password."
+            printf "Password cannot be empty. Please specify a password.\n"
     else
         # Hash the password using SHA-256
         hashed_password=$(echo -n "$password" | sha256sum | awk '{print $1}')
@@ -122,11 +124,7 @@ done
     read -p "Please enter Admin Dashboard Port [eg. 8080]: " dashboard_port
     dashboard_port="${dashboard_port:-8080}"  # Default port if user hits Enter
 
-  #  read -p "Enter WireGuard Private IP Address(s) [eg. 10.10.10.1/24,fdf2:de64:f67d:4add::/64]: " wg_address
- #   wg_address="${wg_address:-10.10.10.1/24,fdf2:de64:f67d:4add::/64}"  # Default address if user hits Enter
-echo ""
-
-
+ printf "\n"
 # Check if IPv6 is available
 #if ip -6 addr show $interface | grep -q inet6; then
 if ip -6 addr show $interface | grep -q inet6 && ip -6 addr show $interface | grep -qv fe80; then
@@ -155,7 +153,7 @@ convert_ipv4_format() {
     # Append ".0" to the network portion and concatenate with the subnet mask
     local converted_ipv4="$network.0/24"
 
-    echo "$converted_ipv4"
+    printf "$converted_ipv4\n"
 }
 
 #!/bin/bash
@@ -189,7 +187,7 @@ convert_ipv4_format() {
     # Append ".0" to the network portion and concatenate with the subnet mask
     local converted_ipv4="$network.0/24"
 
-    echo "$converted_ipv4"
+    printf "$converted_ipv4\n"
 }
 
 # Function to generate IPv4 addresses
@@ -209,11 +207,11 @@ generate_ipv4() {
             read -p "Enter custom Private IPv4 address: " ipv4_address_pvt
             ;;
         *)
-            echo "Invalid option for IPv4 range."
+            printf "Invalid option for IPv4 range.\n"
             exit 1
             ;;
     esac
-    echo "$ipv4_address_pvt"  # Return the generated IP address with subnet
+    printf "$ipv4_address_pvt\n"  # Return the generated IP address with subnet
 }
 
 # Function to generate IPv6 addresses
@@ -230,11 +228,11 @@ generate_ipv6() {
             read -p "Enter custom Private IPv6 address: " ipv6_address_pvt
             ;;
         *)
-            echo "Invalid option for IPv6 range."
+            printf "Invalid option for IPv6 range.\n"
             exit 1
             ;;
     esac
-    echo "$ipv6_address_pvt"  # Return the generated IP address with subnet
+    printf "$ipv6_address_pvt\n"  # Return the generated IP address with subnet
 }
 
 # Function to validate user input within a range
@@ -243,7 +241,7 @@ validate_input() {
     local min=$2
     local max=$3
     if (( input < min || input > max )); then
-        echo "Invalid option. Please choose an option between $min and $max."
+        printf "Invalid option. Please choose an option between $min and $max.\n"
         return 1
     fi
     return 0
@@ -252,11 +250,11 @@ validate_input() {
 # Main script
 
 while true; do
-    echo "Choose IP range type for IPv4:"
-    echo "1) Class A: 10.0.0.0 to 10.255.255.255"
-    echo "2) Class B: 172.16.0.0 to 172.31.255.255"
-    echo "3) Class C: 192.168.0.0 to 192.168.255.255"
-    echo "4) Specify custom Private IPv4"
+    printf "Choose IP range type for IPv4:\n"
+    printf "1) Class A: 10.0.0.0 to 10.255.255.255\n"
+    printf "2) Class B: 172.16.0.0 to 172.31.255.255\n"
+    printf "3) Class C: 192.168.0.0 to 192.168.255.255\n"
+    printf "4) Specify custom Private IPv4\n"
     read -p "Enter your choice (1-4): " ipv4_option
 
     case $ipv4_option in
@@ -265,7 +263,7 @@ while true; do
             break
             ;;
         *)
-            echo "Invalid option for IPv4 range."
+            printf "Invalid option for IPv4 range.\n"
             ;;
     esac
 done
@@ -273,10 +271,10 @@ done
 ipv6_option=""
 if $ipv6_available; then
     while true; do
-        echo "Choose IP range type for IPv6:"
-        echo "1) FC00::/7"
-        echo "2) FD00::/7"
-        echo "3) Specify custom Private IPv6"
+        printf "Choose IP range type for IPv6:\n"
+        printf "1) FC00::/7\n"
+        printf "2) FD00::/7\n"
+        printf "3) Specify custom Private IPv6\n"
         read -p "Enter your choice (1-3): " ipv6_option
 
         case $ipv6_option in
@@ -285,24 +283,19 @@ if $ipv6_available; then
                 break
                 ;;
             *)
-                echo "Invalid option for IPv6 range."
+                printf "Invalid option for IPv6 range.\n"
                 ;;
         esac
     done
 fi
-echo "IPv4 Address: $ipv4_address_pvt"
+printf "IPv4 Address: $ipv4_address_pvt\n"
 if [ -n "$ipv6_address_pvt" ]; then
-    echo "IPv6 Address: $ipv6_address_pvt"
+    printf "IPv6 Address: $ipv6_address_pvt\n"
 fi
-echo ""
-
-
+printf "\n"
 read -p "Specify a Peer Endpoint Allowed IPs OR [press enter to use - 0.0.0.0/0,::/0]: " allowed_ip
 allowed_ip="${allowed_ip:-0.0.0.0/0,::/0}"  # Default IPs if user hits Enter
-
-
-echo ""
-
+printf "\n"
 # Function to retrieve IPv4 addresses (excluding loopback address)
 get_ipv4_addresses() {
     ip -o -4 addr show $interface | awk '$4 !~ /^127\.0\.0\.1/ {print $4}' | cut -d'/' -f1
@@ -319,7 +312,7 @@ validate_input() {
     local min=$2
     local max=$3
     if (( input < min || input > max )); then
-        echo "Invalid option. Please choose an option between $min and $max."
+        printf "Invalid option. Please choose an option between $min and $max.\n"
         return 1
     fi
     return 0
@@ -331,7 +324,7 @@ validate_input() {
 read -p "Enter the internet interface OR (press Enter for detected: $interface)" net_interface
 #read -p "Enter the internet interface (detected is: $interface)" interface
 interface="${net_interface:-$interface}"  # Default IPs if user hits Enter
-echo ""
+printf "\n"
 
 # Check if IPv6 is available
 if ipv6_available; then
@@ -351,46 +344,46 @@ select opt in "${options[@]}"; do
     case $REPLY in
         1)
             # Display IPv4 addresses as options
-            echo "Available Public IPv4 addresses:"
+            printf "Available Public IPv4 addresses:\n"
             ipv4_addresses=$(get_ipv4_addresses)
             select ipv4_address in $ipv4_addresses; do
                 if validate_input $REPLY 1 $(wc -w <<< "$ipv4_addresses"); then
                     break
                 fi
             done
-            echo "Selected Public IPv4 Address: $ipv4_address"
+            printf "Selected Public IPv4 Address: $ipv4_address\n"
 
             # If IPv6 is available, present options to choose an IPv6 address
             if [ "$ipv6_available" = true ]; then
-                echo "Choose a Public IPv6 address:"
+                printf "Choose a Public IPv6 address:\n"
                 ipv6_addresses=$(get_ipv6_addresses)
                 select ipv6_address in $ipv6_addresses; do
                     if validate_input $REPLY 1 $(wc -w <<< "$ipv6_addresses"); then
                         break
                     fi
                 done
-                echo "Selected Public IPv6 Address: $ipv6_address"
+                printf "Selected Public IPv6 Address: $ipv6_address\n"
             fi
             break
             ;;
         2)
             if [ "$ipv6_available" = true ]; then
                 # Display IPv6 addresses as options
-                echo "Available Public IPv6 addresses (excluding link-local addresses):"
+                printf "Available Public IPv6 addresses (excluding link-local addresses):\n"
                 ipv6_addresses=$(get_ipv6_addresses)
                 select ipv6_address in $ipv6_addresses; do
                     if validate_input $REPLY 1 $(wc -w <<< "$ipv6_addresses"); then
                         break
                     fi
                 done
-                echo "Selected Public IPv6 Address: $ipv6_address"
+                printf "Selected Public IPv6 Address: $ipv6_address\n"
             else
-                echo "Public IPv6 is not available."
+                printf "Public IPv6 is not available.\n"
             fi
             break
             ;;
         *)
-            echo "Invalid option. Please select again."
+            printf "Invalid option. Please select again.\n"
             ;;
     esac
 done
@@ -399,7 +392,7 @@ printf "\n"
 clear
     # Continue with the rest of your installation script...
     printf "Starting with installation...\n"
-    print "\n"
+    printf "\n"
     # Your installation commands here...
 # Update hostname
 echo "$hostname" | tee /etc/hostname > /dev/null
@@ -521,9 +514,7 @@ elif [ "$pkg_manager" == "yum" ]; then
     firewall-cmd --reload
 fi
 
-mkdir /etc/wireguard/network
 
-iptables_script="/etc/wireguard/network/iptables.sh"
 
 #sed -i "s|^ListenPort =.*|ListenPort = $wg_port|g" /etc/wireguard/wg0.conf
 if [[ -n $ipv6_address ]]; then
@@ -543,12 +534,13 @@ ListenPort = $wg_port
 PrivateKey = $private_key
 EOF
 
+# Define the path to the iptables.sh script
+mkdir /etc/wireguard/network
+iptables_script="/etc/wireguard/network/iptables.sh"
+
 # Add Wireguard Network configuration
 printf "Setting up Wireguard Network .....\n"
 ipv4_address_pvt0=$(convert_ipv4_format "$ipv4_address_pvt")
-# Define the path to the iptables.sh script
-
-
 
 
 # Determine the distribution to choose between iptables or firewall-cmd
@@ -559,11 +551,30 @@ elif [ -f /etc/lsb-release ]; then
     # Ubuntu or Debian
     seed_ubuntu_firewallcmd
 else
-    print "Unsupported distribution.\n"
+    echo "Unsupported distribution."
     exit 1
 fi
 
+
 # Define the function for seeding iptables rules on CentOS
+seed_centos_iptables() {
+    iptables_script="/etc/wireguard/network/iptables.sh"
+    cat <<EOF | tee -a "$iptables_script"
+#!/bin/bash
+
+# Wait for the network interface to be up
+while ! ip link show dev $interface up; do
+    sleep 1
+done
+
+# Set iptables rules for WireGuard (IPv4)
+firewall-cmd --zone=public --add-rich-rule='rule family="ipv4" source address="$ipv4_address_pvt0" masquerade'
+firewall-cmd --add-rich-rule='rule family="ipv4" source address="$ipv4_address_pvt0" port protocol="udp" port="$wg_port" accept'
+
+EOF
+}
+
+# Define the function for seeding firewall-cmd rules on Ubuntu
 seed_ubuntu_firewallcmd() {
     iptables_script="/etc/wireguard/network/iptables.sh"
     cat <<EOF | tee -a "$iptables_script"
@@ -582,22 +593,6 @@ iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
 EOF
 }
 
-# Define the function for seeding firewall-cmd rules on Ubuntu
-seed_centos_iptables() {
-    iptables_script="/etc/wireguard/network/iptables.sh"
-    cat <<EOF | tee -a "$iptables_script"
-#!/bin/bash
-
-# Wait for the network interface to be up
-while ! ip link show dev $interface up; do
-    sleep 1
-done
-
-# Set iptables rules for WireGuard (IPv4)
-firewall-cmd --zone=public --add-rich-rule='rule family="ipv4" source address="$ipv4_address_pvt0" masquerade'
-firewall-cmd --add-rich-rule='rule family="ipv4" source address="$ipv4_address_pvt0" port protocol="udp" port="$wg_port" accept'
-
-EOF
 
 # Check if IPv6 is available
 if [[ -n $ipv6_address ]]; then
