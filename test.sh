@@ -43,14 +43,13 @@ printf "\n\n"
         pkg_manager="yum"
         ufw_package="firewalld"
     elif [ -f "/etc/debian_version" ]; then
-        printf "Detected Debian or Ubuntu...\n"
+        printf "Detected OS: Debian or Ubuntu.\n"
         pkg_manager="apt"
         ufw_package="ufw"
     else
         printf "Unsupported distribution.\n"
         exit 1
     fi
-    printf "\n\n"
 # Prompt the user to continue
 read -p "Would you like to continue now ? [y/n]: " choice
 
@@ -572,27 +571,6 @@ firewall-cmd --zone=public --add-rich-rule='rule family="ipv4" source address="$
 firewall-cmd --add-rich-rule='rule family="ipv4" source address="$ipv4_address_pvt0" port protocol="udp" port="$wg_port" accept'
 
 EOF
-}
-
-# Define the function for seeding firewall-cmd rules on Ubuntu
-seed_ubuntu_firewallcmd() {
-    iptables_script="/etc/wireguard/network/iptables.sh"
-    cat <<EOF | tee -a "$iptables_script"
-# Wait for the network interface to be up
-while ! ip link show dev $interface up; do
-    sleep 1
-done
-
-# Set iptables rules for WireGuard
-iptables -t nat -I POSTROUTING --source $ipv4_address_pvt0 -o $interface -j SNAT --to $ipv4_address
-iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
-
-# Set ip6tables rules for WireGuard (IPv6)
-#ip6tables -t nat -I POSTROUTING --source ::/0 -o $interface -j SNAT --to $ipv6_address
-
-EOF
-}
-
 
 # Check if IPv6 is available
 if [[ -n $ipv6_address ]]; then
@@ -615,7 +593,33 @@ ufw route allow in on wg0 out on $interface
 EOF
 }
 
+# Define the function for seeding firewall-cmd rules on Ubuntu
+seed_ubuntu_firewallcmd() {
+    iptables_script="/etc/wireguard/network/iptables.sh"
+    cat <<EOF | tee -a "$iptables_script"
+# Wait for the network interface to be up
+while ! ip link show dev $interface up; do
+    sleep 1
+done
 
+# Set iptables rules for WireGuard
+iptables -t nat -I POSTROUTING --source $ipv4_address_pvt0 -o $interface -j SNAT --to $ipv4_address
+iptables -t nat -D POSTROUTING -o $interface -j MASQUERADE
+
+# Set ip6tables rules for WireGuard (IPv6)
+#ip6tables -t nat -I POSTROUTING --source ::/0 -o $interface -j SNAT --to $ipv6_address
+
+EOF
+# Add custom route for WireGuard interface
+cat <<EOF | tee -a "$iptables_script"
+# Add custom route for WireGuard interface
+ip route add default dev wg0
+
+# Add custom route for incoming traffic from WireGuard
+ufw route allow in on wg0 out on $interface
+
+EOF
+}
 
 
 cat <<EOF | tee -a /etc/systemd/system/wireguard-iptables.service >/dev/null
