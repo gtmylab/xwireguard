@@ -43,7 +43,7 @@ printf "\n\n"
         pkg_manager="yum"
         ufw_package="firewalld"
     elif [ -f "/etc/debian_version" ]; then
-        printf "Detected System as Debian or Ubuntu...\n"
+        printf "Detected System as Debian or Ubuntu.\n"
         pkg_manager="apt"
         ufw_package="ufw"
     else
