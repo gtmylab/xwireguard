@@ -519,8 +519,8 @@ echo "Creating firewall rules ....."
 ufw allow $wg_port/udp
 echo "Creating firewall rules ....."
 ufw allow 53/udp
-echo "Creating firewall rules ....."
-ufw allow OpenSSH
+#echo "Creating firewall rules ....."
+#ufw allow OpenSSH
 echo "Creating firewall rules ....."
 ufw --force enable
 
@@ -693,7 +693,29 @@ while true; do
 done
 EOF_SCRIPT
 
+cat <<'EOF_SCRIPT' | sudo tee /etc/xwireguard/monitor/check_wg_config.sh >/dev/null
+#!/bin/bash
 
+# Define the path to the directory containing WireGuard config files
+WG_CONFIG_DIR="/etc/wireguard/"
+
+# Function to check for double lines of "Address" and modify the file if necessary
+check_and_modify_wg_config() {
+    for wg_config in "$WG_CONFIG_DIR"*.conf; do
+        if [ "$(grep -c '^Address =' "$wg_config")" -gt 1 ]; then
+        sed -i '/^#Wireguard IPv6 Monitoring Active on this file$/d' "$wg_config"
+        sed -i '$a #Wireguard IPv6 Monitoring Active on this file' "$wg_config"
+        echo "More than one line of 'Address' found and modified in $wg_config"
+        touch "$wg_config"
+        else
+            print "No double lines of 'Address' found in $wg_config\n"
+        fi
+    done
+}
+
+# Execute the function to check and modify all WireGuard config files
+check_and_modify_wg_config
+EOF_SCRIPT
 
 cat <<EOF | tee -a /etc/systemd/system/wgmonitor.service >/dev/null
 [Unit]
