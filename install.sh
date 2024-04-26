@@ -821,7 +821,7 @@ if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
 echo ""
 echo ""
 echo "Rebooting system ......."
-reboot
+#reboot
 else
     echo "Error: Installation failed. Please check the services and try again."
 fi
