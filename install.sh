@@ -656,69 +656,42 @@ cp "$SERVICE_FILE" /etc/systemd/system/wg-dashboard.service
 chmod 664 /etc/systemd/system/wg-dashboard.service
 
 
-cat <<'EOF_SCRIPT' | tee -a /etc/xwireguard/monitor/wg.sh >/dev/null
+cat <<'EOF_SCRIPT' | sudo tee /etc/xwireguard/monitor/wg.sh >/dev/null
 #!/bin/bash
 
-# Define the path to the WireGuard config file
-WG_CONFIG="/etc/wireguard/wg0.conf"
+# Define the path to the directory containing WireGuard config files
+WG_CONFIG_DIR="/etc/wireguard/"
 
 # Function to combine Address lines under the [Interface] section
 combine_addresses() {
-    awk '
-    $1 == "[Interface]" { print; iface=1; next }
-    iface && $1 == "Address" {
-        if (address == "") {
-            address = $3
-        } else {
-            address = address "," $3
+    for wg_config in "$WG_CONFIG_DIR"*.conf; do
+        awk '
+        $1 == "[Interface]" { print; iface=1; next }
+        iface && $1 == "Address" {
+            if (address == "") {
+                address = $3
+            } else {
+                address = address "," $3
+            }
+            next
         }
-        next
-    }
-    iface && address != "" {
-        print "Address =", address
-        address = ""
-    }
-    { print }
-    END { if (address != "") print "Address =", address }
-    ' "$WG_CONFIG" > "$WG_CONFIG.tmp" && mv "$WG_CONFIG.tmp" "$WG_CONFIG"
+        iface && address != "" {
+            print "Address =", address
+            address = ""
+        }
+        { print }
+        END { if (address != "") print "Address =", address }
+        ' "$wg_config" > "$wg_config.tmp" && mv "$wg_config.tmp" "$wg_config"
+    done
 }
 
-# Sleep for 5 seconds to wait for potential modifications after reboot
-sleep 10
-
-# Monitor the config file for modifications and call the function to combine addresses
+# Monitor the directory containing WireGuard config files for modifications
 while true; do
-    inotifywait -e modify "$WG_CONFIG"
+    inotifywait -e modify "$WG_CONFIG_DIR"
     combine_addresses
-    echo "WireGuard config file modified"
+    print "WireGuard config files modified\n"
 done
 EOF_SCRIPT
-
-
-
-cat <<'EOF_SCRIPT' | sudo tee /etc/xwireguard/monitor/check_wg_config.sh >/dev/null
-#!/bin/bash
-
-# Define the path to the WireGuard config file
-WG_CONFIG="/etc/wireguard/wg0.conf"
-
-# Function to check for double lines of "Address" and modify the file if necessary
-check_and_modify_wg_config() {
-    if grep -q '^Address =' "$WG_CONFIG" && grep -q '^Address =' "$WG_CONFIG" <(tail -n +2 "$WG_CONFIG"); then
-        # Double lines of "Address" found, perform modification
-        sed -i '$a #Wireguard IPv6 Monitoring Active on this file' "$WG_CONFIG"
-        echo "Double lines of 'Address' found and modified in $WG_CONFIG"
-        # Trigger inotifywait to detect the modification
-        touch "$WG_CONFIG"
-    else
-        echo "No double lines of 'Address' found in $WG_CONFIG"
-    fi
-}
-
-# Execute the function to check and modify the wg0.conf file
-check_and_modify_wg_config
-EOF_SCRIPT
-
 
 
 
