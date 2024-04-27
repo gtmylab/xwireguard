@@ -656,42 +656,51 @@ cp "$SERVICE_FILE" /etc/systemd/system/wg-dashboard.service
 chmod 664 /etc/systemd/system/wg-dashboard.service
 
 
-cat <<'EOF_SCRIPT' | sudo tee /etc/xwireguard/monitor/wg.sh >/dev/null
+
+cat << 'EOF' > /etc/xwireguard/monitor/wg.sh
 #!/bin/bash
 
-# Define the path to the directory containing WireGuard config files
+# Define the path to the WireGuard config directory
 WG_CONFIG_DIR="/etc/wireguard/"
 
 # Function to combine Address lines under the [Interface] section
 combine_addresses() {
-    for wg_config in "$WG_CONFIG_DIR"*.conf; do
-        awk '
-        $1 == "[Interface]" { print; iface=1; next }
-        iface && $1 == "Address" {
-            if (address == "") {
-                address = $3
-            } else {
-                address = address "," $3
-            }
-            next
+ local WG_CONFIG="\$1"
+awk '
+    \$1 == "[Interface]" { print; iface=1; next }
+    iface && \$1 == "Address" {
+        if (address == "") {
+            address = \$3
+        } else {
+            address = address "," \$3
         }
-        iface && address != "" {
-            print "Address =", address
-            address = ""
-        }
-        { print }
-        END { if (address != "") print "Address =", address }
-        ' "$wg_config" > "$wg_config.tmp" && mv "$wg_config.tmp" "$wg_config"
-    done
+        next
+    }
+    iface && address != "" {
+        print "Address =", address
+        address = ""
+    }
+    { print }
+    END { if (address != "") print "Address =", address }
+    ' "\$WG_CONFIG" > "\$WG_CONFIG.tmp" && mv "\$WG_CONFIG.tmp" "\$WG_CONFIG"
 }
 
-# Monitor the directory containing WireGuard config files for modifications
+# Sleep for 10 seconds to wait for potential modifications after reboot
+sleep 10
+
+# Monitor the config files for modifications and call the function to combine addresses
 while true; do
-    inotifywait -e modify "$WG_CONFIG_DIR"
-    combine_addresses
-    print "WireGuard config files modified\n"
+    for WG_CONFIG in "\$WG_CONFIG_DIR"*.conf; do
+    inotifywait -e modify "\$WG_CONFIG"
+    combine_addresses "\$WG_CONFIG"
+    echo "WireGuard config file modified"
 done
-EOF_SCRIPT
+done
+EOF
+
+
+
+
 
 cat <<EOF_SCRIPT > /etc/xwireguard/monitor/check_wg_config.sh
 #!/bin/bash
@@ -814,27 +823,23 @@ if [ "$wg_status" = "active" ] && [ "$dashboard_status" = "active" ]; then
     # Get the server IPv4 address
     server_ip=$(curl -s4 ifconfig.me)
 
-    # Display success message in green font
-    echo -e "\e[32mGreat! Installation was successful!"
-    echo "You can access Wireguard Dashboard now:"
-    echo 'URL: http://'"$server_ip:$dashboard_port"
-    echo "Username: $username"
-    echo "Password: ***(hidden)***"
-    echo ""
-    echo "System will reboot now and after that Go ahead and create your first peers"
-    echo -e "\e[0m" # Reset font color
-
-# Reload systemd daemon
-#systemctl daemon-reload
-#systemctl restart wireguard-iptables.service
-echo ""
-echo ""
-echo "Rebooting system ......."
+    # Display final setup instructions
+    printf "\n\n\e[32mSetup is complete!\e[0m\n\n"
+    printf "You can now access Wireguard from WGDashboard from your browser at: $server_ip:$dashboard_port\n"
+    printf "Default login details:\n"
+    printf "Username: %s\n" "$username"
+    printf "Password: [The one you specified during setup]\n\n"
+    printf "Thank you for using xWireGuard Management & Server.\n"
+    printf "Please consider supporting WGDashboard on GitHub: https://github.com/donaldzou/WGDashboard\n"
+    printf "System will reboot now and after that Go ahead and create your first peers.\n"
+printf "\n"
+printf "\n"
+printf "Rebooting system .......\n"
 reboot
 else
-    echo "Error: Installation failed. Please check the services and try again."
+    printf "Error: Installation failed. Please check the services and try again.\n"
 fi
 else
-    echo "Installation aborted."
+    printf "Installation cancelled.\n"
     exit 0
 fi
