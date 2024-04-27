@@ -583,7 +583,8 @@ cat <<'EOF_SCRIPT' | sudo tee /etc/xwireguard/monitor/check_wg_config.sh >/dev/n
 WG_CONFIG="/etc/wireguard/wg0.conf"
 # Function to check for double lines of "Address" and modify the file if necessary
 check_and_modify_wg_config() {
-    if grep -q '^Address =' "$WG_CONFIG" && grep -q '^Address =' "$WG_CONFIG" <(tail -n +2 "$WG_CONFIG"); then
+    #if grep -q '^Address =' "$WG_CONFIG" && grep -q '^Address =' "$WG_CONFIG" <(tail -n +2 "$WG_CONFIG"); then
+        if [ "$(grep -c '^Address =' "$WG_CONFIG")" -gt 1 ]; then
         # Double lines of "Address" found, perform modification
         sed -i '$a #Wireguard IPv6 Monitoring Active on this file' "$WG_CONFIG"
         echo "Double lines of 'Address' found and modified in $WG_CONFIG"
