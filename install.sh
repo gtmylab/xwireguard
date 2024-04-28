@@ -47,23 +47,43 @@ echo "   - Git"
 echo "   - UFW - firewall"
 echo "   - inotifywait"
 echo ""
- 
+ # Check if the system is CentOS, Debian, or Ubuntu
+if [ -f "/etc/centos-release" ]; then
+    # CentOS
+    centos_version=$(rpm -q --queryformat '%{VERSION}' centos-release)
+    printf "Detected CentOS %s...\n" "$centos_version"
+    pkg_manager="yum"
+    ufw_package="ufw"
+elif [ -f "/etc/debian_version" ]; then
+    # Debian or Ubuntu
+    if [ -f "/etc/os-release" ]; then
+        source "/etc/os-release"
+        if [ "$ID" = "debian" ]; then
+            debian_version=$(cat /etc/debian_version)
+            printf "Detected Debian %s...\n" "$debian_version"
+        elif [ "$ID" = "ubuntu" ]; then
+            ubuntu_version=$(lsb_release -rs)
+            printf "Detected Ubuntu %s...\n" "$ubuntu_version"
+        else
+            printf "Unsupported distribution.\n"
+            exit 1
+        fi
+    else
+        printf "Unsupported distribution.\n"
+        exit 1
+    fi
+    pkg_manager="apt"
+    ufw_package="ufw"
+else
+    printf "Unsupported distribution.\n"
+    exit 1
+fi
+
+printf "\n\n"
 # Prompt the user to continue
 read -p "Would you like to continue now ? [y/n]: " choice
 if [[ "$choice" =~ ^[Yy]$ ]]; then
- # Check if the system is CentOS, Debian, or Ubuntu
-    if [ -f "/etc/centos-release" ]; then
-        echo "Detected CentOS..."
-        pkg_manager="yum"
-        ufw_package="firewalld"
-    elif [ -f "/etc/debian_version" ]; then
-        echo "Detected Debian or Ubuntu..."
-        pkg_manager="apt"
-        ufw_package="ufw"
-    else
-        echo "Unsupported distribution."
-        exit 1
-    fi
+
 # Prompt the user to enter hostname until a valid one is provided
 # Function to validate hostname
 validate_hostname() {
@@ -125,11 +145,11 @@ done
 echo ""
 # Check if IPv6 is available
 #if ip -6 addr show $interface | grep -q inet6; then
-if ip -6 addr show $interface | grep -q inet6 && ip -6 addr show $interface | grep -qv fe80; then
-    ipv6_available=true
-else
-    ipv6_available=false
-fi
+#if ip -6 addr show $interface | grep -q inet6 && ip -6 addr show $interface | grep -qv fe80; then
+ #   ipv6_available=true
+#else
+ #   ipv6_available=false
+#fi
 # Function to check if IPv6 is available
 ipv6_available() {
 if ip -6 addr show $interface | grep -q inet6 && ip -6 addr show $interface | grep -qv fe80; then
@@ -160,10 +180,15 @@ is_global_ipv6() {
     fi
 }
 # Check if IPv6 is available on the default interface
-ipv6_available=false
-default_interface=$(ip route list default | awk '$1 == "default" {print $5}')
-if ip -6 addr show $default_interface | grep -q inet6 && ip -6 addr show $default_interface | grep -v fe80 | grep -q "::"; then
+#ipv6_available=false
+#default_interface=$(ip route list default | awk '$1 == "default" {print $5}')
+#if ip -6 addr show $default_interface | grep -q inet6 && ip -6 addr show $default_interface | grep -v fe80 | grep -q "::"; then
+ #   ipv6_available=true
+#fi
+if ipv6_available; then
     ipv6_available=true
+else
+    ipv6_available=false
 fi
 # Function to convert IPv4 address format
 convert_ipv4_format() {
@@ -425,9 +450,21 @@ apt install -y wireguard >/dev/null 2>&1
 private_key=$(wg genkey 2>/dev/null)
 echo "$private_key" | tee /etc/wireguard/private.key >/dev/null
 public_key=$(echo "$private_key" | wg pubkey 2>/dev/null)
-# Enable IPv4 and IPv6 forwarding
-sed -i '/^#net.ipv4.ip_forward=1/s/^#//' /etc/sysctl.conf >/dev/null
-sed -i '/^#net.ipv6.conf.all.forwarding=1/s/^#//' /etc/sysctl.conf >/dev/null
+# Enable IPv4 forwarding if it's not already enabled
+if ! grep -q '^#net.ipv4.ip_forward=1' /etc/sysctl.conf; then
+    echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf
+elif grep -q '^#net.ipv4.ip_forward=1' /etc/sysctl.conf; then
+    # If it's commented, uncomment it
+    sed -i '/^#net.ipv4.ip_forward=1/s/^#//' /etc/sysctl.conf >/dev/null
+fi
+
+# Enable IPv6 forwarding if it's not already enabled
+if ! grep -q '^#net.ipv6.conf.all.forwarding=1' /etc/sysctl.conf; then
+    echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.conf
+elif grep -q '^#net.ipv6.conf.all.forwarding=1' /etc/sysctl.conf; then
+    # If it's commented, uncomment it
+    sed -i '/^#net.ipv6.conf.all.forwarding=1/s/^#//' /etc/sysctl.conf >/dev/null
+fi
 # Apply changes
 sysctl -p >/dev/null
 ssh_port=$(ss -tlnp | grep 'sshd' | awk '{print $4}' | awk -F ':' '{print $NF}' | sort -u)
@@ -577,7 +614,7 @@ while true; do
     echo "WireGuard config file modified"
 done
 EOF_SCRIPT
-cat <<'EOF_SCRIPT' | sudo tee /etc/xwireguard/monitor/check_wg_config.sh >/dev/null
+cat <<'EOF_SCRIPT' | tee /etc/xwireguard/monitor/check_wg_config.sh >/dev/null
 #!/bin/bash
 # Define the path to the WireGuard config file
 WG_CONFIG="/etc/wireguard/wg0.conf"
