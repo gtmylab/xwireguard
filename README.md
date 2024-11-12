@@ -2,6 +2,6 @@ Wireguard Installer and Admin Panel to manage peers and client. The admin panel 
 
 Install only in Ubuntu 20.10, Ubuntu 20.04, Ubuntu 22.04 & Debian 11 system ONLY
 
-Install using:
+Project is has moved and is available at:
 
-curl -O https://raw.githubusercontent.com/gtmylab/xwireguard/main/install.sh && chmod +x install.sh && ./install.sh
+https://github.com/cryptroute/x-wireguard
